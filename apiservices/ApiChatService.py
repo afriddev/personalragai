@@ -44,18 +44,18 @@ class ApiChatService(ApiChatImpl):
                 )
             )
         userMessages.append(
-            ChatMessageModel(role=ChatMessageRoleEnum.USER, content=request.query)
+            ChatMessageModel(role=ChatMessageRoleEnum.USER, content=request.content)
         )
 
         response: Any = await chatService.Chat(
             modelParams=ChatRequestModel(
-                model=CerebrasChatModelEnum.QWEN_32B,
+                model=OpenaiChatModelsEnum.MISTRAL_NEMOTRON_240K,
                 maxCompletionTokens=5000,
                 messages=userMessages,
                 stream=True,
                 temperature=0.7,
                 topP=0.9,
-                method="cerebras",
+                method="nvidia",
             )
         )
 

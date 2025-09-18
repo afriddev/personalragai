@@ -3,12 +3,12 @@ from pydantic import BaseModel
 
 class ApiChatMessageModel(BaseModel):
     role: str
-    query: str
     id: str
     useWebSearch: bool = False
     useCodeModel: bool = False
+    content: str
 
 
 class ApiChatRequestModel(BaseModel):
-    query: str
+    content: str
     messages: list[ApiChatMessageModel] = []
