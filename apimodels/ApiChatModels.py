@@ -3,7 +3,10 @@ from pydantic import BaseModel
 
 class ApiChatMessageModel(BaseModel):
     role: str
-    content: str
+    query: str
+    id: str
+    useWebSearch: bool = False
+    useCodeModel: bool = False
 
 
 class ApiChatRequestModel(BaseModel):

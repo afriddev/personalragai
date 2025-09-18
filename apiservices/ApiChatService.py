@@ -49,13 +49,13 @@ class ApiChatService(ApiChatImpl):
 
         response: Any = await chatService.Chat(
             modelParams=ChatRequestModel(
-                model=OpenaiChatModelsEnum.MISTRAL_NEMOTRON_240K,
+                model=CerebrasChatModelEnum.QWEN_32B,
                 maxCompletionTokens=5000,
                 messages=userMessages,
                 stream=True,
                 temperature=0.7,
                 topP=0.9,
-                method="nvidia",
+                method="cerebras",
             )
         )
 

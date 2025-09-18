@@ -1,11 +1,19 @@
 from fastapi import FastAPI
+from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 from clientservices.services import Chat
 from apicontrollers import ApiChatRouter
+import asyncio
+from database import psqlDbClient, mongoClient
 
 
-load_dotenv()
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     asyncio.create_task(psqlDbClient.connect())
+#     asyncio.create_task(mongoClient["ragai"])
+#     yield
+#     await asyncio.wait_for(psqlDbClient.close(), timeout=3)
+#     await asyncio.wait_for(mongoClient.close(), timeout=3)
 
 
 app = FastAPI()
