@@ -66,6 +66,7 @@ class Chat(ChatImpl):
             temperature=modelParams.temperature,
             top_p=modelParams.topP,
             seed=modelParams.seed,
+            reasoning_effort="high",
             response_format=cast(
                 Any,
                 (
