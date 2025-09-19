@@ -18,12 +18,52 @@ chatService = Chat()
 
 class ApiChatService(ApiChatImpl):
 
+    def GetModel(
+        self, request: ApiChatRequestModel
+    ) -> OpenaiChatModelsEnum | CerebrasChatModelEnum | GroqChatModelsEnum:
+
+        if request.useWebSearch:
+            return GroqChatModelsEnum.GROQ_COMPOUND
+        
+        elif request.useFlash == False:
+            if request.useCode and request.useDeepResearch:
+                return OpenaiChatModelsEnum.LLAMA_235B_130K
+            elif request.useCode and request.useDeepResearch == False:
+                return OpenaiChatModelsEnum.QWEN_480B_CODER_260K
+            elif request.useCode == False and request.useDeepResearch:
+                return OpenaiChatModelsEnum.LLAMA_49B_110K
+            else:
+                return OpenaiChatModelsEnum.LLAMA_405B_110K
+        
+        else:
+            if request.useCode and request.useDeepResearch:
+                # return CerebrasChatModelEnum.GPT_OSS_120B
+                return CerebrasChatModelEnum.QWEN_235B_THINKING
+            elif request.useCode and request.useDeepResearch == False:
+                return CerebrasChatModelEnum.QWEN_235B
+            elif request.useCode == False and request.useDeepResearch:
+                return CerebrasChatModelEnum.QWEN_32B
+            else:
+                return CerebrasChatModelEnum.LLAMA_70B
+
+
+
     async def ApiChat(self, request: ApiChatRequestModel) -> StreamingResponse:
         PROFESSIONAL_SYSTEM_PROMPT = """
-        You are a highly skilled and professional AI assistant specializing in providing clear, concise, and accurate information. Always maintain a polite and respectful tone.
-        Maintain confidentiality and respect user privacy at all times.
-       
-        """
+You are a highly skilled and professional AI assistant.  
+
+### Core Guidelines:
+- Always respond in **professional Markdown formatting**.  
+- Use **bullet points and emojis** to improve readability.  
+- Maintain a **polite, respectful, and concise tone**.  
+- Provide **clear, accurate, and well-structured information**.  
+- Uphold **confidentiality** and respect **user privacy** at all times.  
+
+### Response Styling:
+- Use **emojis**(only where they enhance clarity or tone).  
+"""
+
+
 
         userMessages: list[ChatMessageModel] = [
             ChatMessageModel(
@@ -47,39 +87,13 @@ class ApiChatService(ApiChatImpl):
             ChatMessageModel(role=ChatMessageRoleEnum.USER, content=request.query)
         )
 
-        model: OpenaiChatModelsEnum | CerebrasChatModelEnum | GroqChatModelsEnum = (
-            OpenaiChatModelsEnum.LLAMA_405B_110K
-        )
-        temperature = 0.2
-        maxCompletionTokens = 3000
-
-        if request.useFlash:
-            model = CerebrasChatModelEnum.GPT_OSS_120B
-            temperature = 0.3
-            maxCompletionTokens = 2000
-
-        elif request.useDeepResearch:
-            model = OpenaiChatModelsEnum.LLAMA_235B_110K
-            temperature = 0.7
-            maxCompletionTokens = 10000
-
-        elif request.useCode:
-            model = OpenaiChatModelsEnum.QWEN_480B_CODER_240K
-            temperature = 0.2
-            maxCompletionTokens = 5000
-
-        elif request.useWebSearch:
-            model = GroqChatModelsEnum.GROQ_COMPOUND
-            temperature = 0.2
-            maxCompletionTokens = 8100
-
+        
+        print(self.GetModel(request=request))
         response: Any = await chatService.Chat(
             modelParams=ChatRequestModel(
-                model=model,
+                model=self.GetModel(request=request),
                 messages=userMessages,
-                temperature=temperature,
-                maxCompletionTokens=maxCompletionTokens,
-                method=(
+                method=(    
                     "groq"
                     if request.useWebSearch
                     else "cerebras" if request.useFlash else "nvidia"

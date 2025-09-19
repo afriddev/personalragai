@@ -23,11 +23,12 @@ class ChatResponseStatusEnum(Enum):
 
 
 class CerebrasChatModelEnum(Enum):
-    GPT_OSS_120B = ("gpt-oss-120b", 5000, True, True)
-    QWEN_235B = ("qwen-3-235b-a22b-instruct-2507", 5000, False, True)
     QWEN_235B_THINKING = ("qwen-3-235b-a22b-thinking-2507", 7000, True, True)
+    QWEN_235B = ("qwen-3-235b-a22b-instruct-2507", 5000, False, True)
+    GPT_OSS_120B = ("gpt-oss-120b", 5000, True, True)
+    LLAMA_70B = ("llama-3.3-70b", 5000, False,  True)
+    # Optional Models
     QWEN_32B = ("qwen-3-32b", 5000, True, True)
-    LLAMA_70B = ("llama-3.3-70b", 5000, True)
     META_LLAMA_17B_MAVERICK = (
         "llama-4-maverick-17b-128e-instruct",
         3000,
@@ -37,14 +38,13 @@ class CerebrasChatModelEnum(Enum):
 
 
 class OpenaiChatModelsEnum(Enum):
-    QWEN_480B_CODER_260K = ("qwen/qwen3-coder-480b-a35b-instruct", 20000, False)
-    SEED_OSS_32B_500K = ("bytedance/seed-oss-36b-instruct", 500000, 20000, True)
-    LLAMA_70B_110K = ("meta/llama-3.1-70b-instruct", 110000, 15000, False)
     LLAMA_235B_130K = ("nvidia/llama-3.1-nemotron-ultra-253b-v1", 15000, True)
-    LLAMA_405B_110K = ("meta/llama-3.1-405b-instruct", 110000, 15000, False)
+    QWEN_480B_CODER_260K = ("qwen/qwen3-coder-480b-a35b-instruct", 20000, False)
     LLAMA_49B_110K = ("nvidia/llama-3.3-nemotron-super-49b-v1.5", 110000, 15000, True)
+    LLAMA_405B_110K = ("meta/llama-3.1-405b-instruct", 110000, 15000, False)
+    # Optional Models
+    SEED_OSS_32B_500K = ("bytedance/seed-oss-36b-instruct", 500000, 20000, True)
 
 
 class GroqChatModelsEnum(Enum):
-    # Search
     GROQ_COMPOUND = "groq/compound"

@@ -20,11 +20,11 @@ class ChatRequestModel(BaseModel):
         OpenaiChatModelsEnum.LLAMA_405B_110K
     )
     messages: List[ChatMessageModel]
-    maxCompletionTokens: Optional[int] = 1024
+    maxCompletionTokens: Optional[int] = 3000
     stream: Optional[bool] = True
     temperature: Optional[float] = 0.2
     responseFormat: Optional[Any] = None
-    topP: float = 1.0
+    topP: float = 0.7
     seed: int = 42
     method: str = "nvidia"
 

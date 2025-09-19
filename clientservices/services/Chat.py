@@ -52,7 +52,16 @@ class Chat(ChatImpl):
         createCall = client.chat.completions.create(
             messages=cast(Any, modelParams.messages),
             model=modelParams.model.value[0],
-            max_completion_tokens=modelParams.maxCompletionTokens,
+            max_completion_tokens=(
+                cast(
+                    Any,
+                    (
+                        modelParams.maxCompletionTokens
+                        if modelParams.maxCompletionTokens
+                        else modelParams.model.value[1]
+                    ),
+                )
+            ),
             stream=modelParams.stream,
             temperature=modelParams.temperature,
             top_p=modelParams.topP,
@@ -87,13 +96,21 @@ class Chat(ChatImpl):
             messages=cast(Any, modelParams.messages),
             model=modelParams.model.value[0],
             max_tokens=(
-                cast(Any, modelParams.model.value[2])
-                if not modelParams.maxCompletionTokens
-                else modelParams.maxCompletionTokens
+                cast(
+                    Any,
+                    (
+                        modelParams.maxCompletionTokens
+                        if modelParams.maxCompletionTokens
+                        else modelParams.model.value[1]
+                    ),
+                )
             ),
             stream=True,
             temperature=modelParams.temperature,
             top_p=modelParams.topP,
+            extra_body={
+                "chat_template_kwargs": {"thinking": modelParams.model.value[2]}
+            },
         )
         chatCompletion: Any = await createCall
 
@@ -103,7 +120,7 @@ class Chat(ChatImpl):
         createCall = openAiGroqClient.chat.completions.create(
             messages=cast(Any, modelParams.messages),
             model=cast(Any, modelParams.model.value),
-            max_tokens=modelParams.maxCompletionTokens,
+            max_tokens=8000,
             stream=modelParams.stream,
             temperature=0.2,
             top_p=0.7,
@@ -153,9 +170,7 @@ class Chat(ChatImpl):
                                         reasoningContent = content
                                         content = None
 
-                                    if (
-                                        reasoningStartIndex < 5 and content
-                                    ):
+                                    if reasoningStartIndex < 5 and content:
                                         reasoningStartToken = (
                                             reasoningStartToken + content
                                         )
