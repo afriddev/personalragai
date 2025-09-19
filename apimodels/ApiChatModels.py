@@ -4,11 +4,14 @@ from pydantic import BaseModel
 class ApiChatMessageModel(BaseModel):
     role: str
     id: str
-    useWebSearch: bool = False
-    useCodeModel: bool = False
     content: str
 
 
 class ApiChatRequestModel(BaseModel):
-    content: str
+    query: str
     messages: list[ApiChatMessageModel] = []
+    useWebSearch: bool = False
+    useCode: bool = False
+    useDeepResearch: bool = False
+    useFlash: bool = False
+    useCreative: bool = False

@@ -86,10 +86,19 @@ class Chat(ChatImpl):
         createCall = openAiClient.chat.completions.create(
             messages=cast(Any, modelParams.messages),
             model=modelParams.model.value[0],
-            max_tokens=modelParams.maxCompletionTokens,
-            stream=modelParams.stream,
+            max_tokens=(
+                cast(Any, modelParams.model.value[2])
+                if not modelParams.maxCompletionTokens
+                else modelParams.maxCompletionTokens
+            ),
+            stream=True,
             temperature=modelParams.temperature,
             top_p=modelParams.topP,
+            extra_body={
+                "chat_template_kwargs": {
+                    "thinking": cast(Any, modelParams.model).value[3]
+                }
+            },
         )
         chatCompletion: Any = await createCall
 
@@ -101,8 +110,8 @@ class Chat(ChatImpl):
             model=cast(Any, modelParams.model.value),
             max_tokens=modelParams.maxCompletionTokens,
             stream=modelParams.stream,
-            temperature=modelParams.temperature,
-            top_p=modelParams.topP,
+            temperature=0.2,
+            top_p=0.7,
         )
         chatCompletion: Any = await createCall
 
@@ -134,19 +143,41 @@ class Chat(ChatImpl):
                             if getattr(chunk, "choices", None):
                                 delta = getattr(chunk.choices[0], "delta", None)
                                 if delta:
+                                    # Content
                                     content = getattr(delta, "content", None)
+                                    # Reasoning Content
                                     reasoningContent = getattr(
                                         delta, "reasoning_content", None
                                     )
                                     reasoning = getattr(delta, "reasoning", None)
+                                    # Search Results
+                                    searchResults = None
+                                    searchResultsContent: Any = []
+                                    executedTools = getattr(
+                                        delta, "executed_tools", None
+                                    )
+                                    if executedTools and len(executedTools) > 0:
+                                        searchResults = executedTools[0].get(
+                                            "search_results"
+                                        )
+                                        results = searchResults.get("results")
+                                        if results and len(results) > 0:
+                                            for item in results:
+                                                searchResultsContent.append(
+                                                    {
+                                                        "title": item.get("title"),
+                                                        "url": item.get("url"),
+                                                        "content": item.get("content"),
+                                                    }
+                                                )
                                     if content:
                                         yield f"data: {json.dumps({'type': 'content', 'data': content})}\n\n"
-
                                     if reasoning:
                                         yield f"data: {json.dumps({'type': 'reasoning', 'data': reasoning})}\n\n"
-
                                     if reasoningContent:
                                         yield f"data: {json.dumps({'type': 'reasoning', 'data': reasoningContent})}\n\n"
+                                    if len(searchResultsContent) > 0:
+                                        yield f"data: {json.dumps({'type': 'searchResults', 'data': searchResultsContent})}\n\n"
 
                     except Exception as e:
                         yield f"event: error\ndata: {str(e)}\n\n"

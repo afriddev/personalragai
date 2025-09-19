@@ -44,18 +44,51 @@ class ApiChatService(ApiChatImpl):
                 )
             )
         userMessages.append(
-            ChatMessageModel(role=ChatMessageRoleEnum.USER, content=request.content)
+            ChatMessageModel(role=ChatMessageRoleEnum.USER, content=request.query)
         )
+
+        model: OpenaiChatModelsEnum | CerebrasChatModelEnum | GroqChatModelsEnum = (
+            OpenaiChatModelsEnum.LLAMA_405B_110K
+        )
+        temperature = 0.2
+        maxCompletionTokens = 3000
+
+        if request.useCreative:
+            model = OpenaiChatModelsEnum.LLAMA_405B_110K
+            temperature = 1.2
+            maxCompletionTokens = 2000
+        elif request.useFlash:
+            model = CerebrasChatModelEnum.GPT_OSS_120B
+            temperature = 0.3
+            maxCompletionTokens = 2000
+        elif request.useDeepResearch:
+            model = CerebrasChatModelEnum.GPT_OSS_120B
+            temperature = 0.2
+            maxCompletionTokens = 10000
+        elif request.useCode:
+            model = OpenaiChatModelsEnum.QWEN_480B_CODER_240K
+            temperature = 0.2
+            maxCompletionTokens = 20000
+        elif request.useWebSearch:
+            model = GroqChatModelsEnum.GROQ_COMPOUND
+            temperature = 0.2
+            maxCompletionTokens = 8100
 
         response: Any = await chatService.Chat(
             modelParams=ChatRequestModel(
-                model=OpenaiChatModelsEnum.MISTRAL_NEMOTRON_240K,
-                maxCompletionTokens=5000,
+                model=model,
                 messages=userMessages,
-                stream=True,
-                temperature=0.7,
-                topP=0.9,
-                method="nvidia",
+                temperature=temperature,
+                maxCompletionTokens=maxCompletionTokens,
+                method=(
+                    "groq"
+                    if request.useWebSearch
+                    else (
+                        "cerebras"
+                        if request.useFlash
+                        else "cerebras" if (request.useDeepResearch) else "openai"
+                    )
+                ),
             )
         )
 

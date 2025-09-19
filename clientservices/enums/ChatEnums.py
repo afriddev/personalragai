@@ -23,30 +23,37 @@ class ChatResponseStatusEnum(Enum):
 
 
 class CerebrasChatModelEnum(Enum):
-    GPT_OSS_120B = ("gpt-oss-120b", 60000, False)
-    QWEN_235B = ("qwen-3-235b-a22b-instruct-2507", 60000, True)
-    QWEN_235B_THINKING = ("qwen-3-235b-a22b-thinking-2507", 60000, True)
+    GPT_OSS_120B = ("gpt-oss-120b", 60000, 1024, True, False)
+    QWEN_235B = ("qwen-3-235b-a22b-instruct-2507", 1024, 60000, False, True)
+    QWEN_235B_THINKING = ("qwen-3-235b-a22b-thinking-2507", 1024, 60000, True, True)
     LLAMA_70B = ("llama-3.3-70b", 60000, True)
-    QWEN_32B = ("qwen-3-32b", 60000, True)
-    META_LLAMA_17B_MAVERICK = ("llama-4-maverick-17b-128e-instruct", 6000, True)
+    QWEN_32B = ("qwen-3-32b", 60000, 1024, True, True)
+    META_LLAMA_17B_MAVERICK = (
+        "llama-4-maverick-17b-128e-instruct",
+        6000,
+        1024,
+        False,
+        True,
+    )
 
 
 class OpenaiChatModelsEnum(Enum):
+
     # Coding Models
-    QWEN_480B_CODER_110K = ("qwen/qwen3-coder-480b-a35b-instruct", 110000)
-    LLAMA_405B_110k = ("meta/llama-3.1-405b-instruct", 110000)
-    LLAMA_235B_110k = ("nvidia/llama-3.1-nemotron-ultra-253b-v1", 110000)
-    
+    QWEN_480B_CODER_240K = ("qwen/qwen3-coder-480b-a35b-instruct", 240000, 20000, False)
+    LLAMA_235B_110K = ("nvidia/llama-3.1-nemotron-ultra-253b-v1", 110000, 15000, True)
 
     # Reasoning Models
-    QWEN_NEXT_80B_200K = ("qwen/qwen3-next-80b-a3b-thinking", 200000)
-    SEED_OSS_32B_500K = ("bytedance/seed-oss-36b-instruct", 500000)
+    QWEN_NEXT_80B_200K = ("qwen/qwen3-next-80b-a3b-thinking", 240000, 15000, True)
+    LLAMA_49B_110K = ("nvidia/llama-3.3-nemotron-super-49b-v1.5", 110000, 15000, True)
 
-    # Long Context Models
-    MISTRAL_NEMOTRON_240K = ("mistralai/mistral-nemotron", 240000)
-    LLAMA_51B_100K = ("nvidia/llama-3.1-nemotron-51b-instruct", 110000)    
-    LLAMA_17B_110K = ("meta/llama-4-maverick-17b-128e-instruct", 110000)
-    
+    # long context Models
+    SEED_OSS_32B_500K = ("bytedance/seed-oss-36b-instruct", 500000, 20000, True)
+    MISTRAL_NEMOTRON_240K = ("mistralai/mistral-nemotron", 240000, 15000, False)
+
+    # High Performance Models
+    LLAMA_405B_110K = ("meta/llama-3.1-405b-instruct", 110000, 15000, False)
+    LLAMA_70B_110K = ("meta/llama-3.1-70b-instruct", 110000, 15000, False)
 
 
 class GroqChatModelsEnum(Enum):

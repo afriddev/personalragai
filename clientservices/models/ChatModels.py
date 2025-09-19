@@ -17,14 +17,14 @@ class ChatMessageModel(BaseModel):
 
 class ChatRequestModel(BaseModel):
     model: CerebrasChatModelEnum | OpenaiChatModelsEnum | GroqChatModelsEnum = (
-        OpenaiChatModelsEnum.SEED_OSS_32B_500K
+        OpenaiChatModelsEnum.LLAMA_405B_110K
     )
     messages: List[ChatMessageModel]
-    maxCompletionTokens: Optional[int] = 3000
-    stream: Optional[bool] = False
-    temperature: Optional[float] = 0.7
+    maxCompletionTokens: Optional[int] = 1024
+    stream: Optional[bool] = True
+    temperature: Optional[float] = 0.2
     responseFormat: Optional[Any] = None
-    topP: float = 0.9
+    topP: float = 0.7
     seed: int = 42
     method: str = "nvidia"
 
