@@ -93,12 +93,7 @@ class Chat(ChatImpl):
             ),
             stream=True,
             temperature=modelParams.temperature,
-            top_p=modelParams.topP,
-            extra_body={
-                "chat_template_kwargs": {
-                    "thinking": cast(Any, modelParams.model).value[3]
-                }
-            },
+            top_p=modelParams.topP
         )
         chatCompletion: Any = await createCall
 

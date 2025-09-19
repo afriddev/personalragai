@@ -24,7 +24,7 @@ class ChatRequestModel(BaseModel):
     stream: Optional[bool] = True
     temperature: Optional[float] = 0.2
     responseFormat: Optional[Any] = None
-    topP: float = 0.7
+    topP: float = 1.0
     seed: int = 42
     method: str = "nvidia"
 
