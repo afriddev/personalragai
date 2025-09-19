@@ -14,4 +14,3 @@ class ApiChatRequestModel(BaseModel):
     useCode: bool = False
     useDeepResearch: bool = False
     useFlash: bool = False
-    useCreative: bool = False

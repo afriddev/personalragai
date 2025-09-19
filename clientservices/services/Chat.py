@@ -93,7 +93,7 @@ class Chat(ChatImpl):
             ),
             stream=True,
             temperature=modelParams.temperature,
-            top_p=modelParams.topP
+            top_p=modelParams.topP,
         )
         chatCompletion: Any = await createCall
 
@@ -132,20 +132,40 @@ class Chat(ChatImpl):
             if modelParams.stream:
 
                 async def eventGenerator():
+                    startedReasoning = False
+                    reasoningStartToken: Any = ""
+                    reasoningEndToken: Any = ""
+                    reasoningStartIndex = 0
                     try:
                         async for chunk in chatCompletion:
-
                             if getattr(chunk, "choices", None):
                                 delta = getattr(chunk.choices[0], "delta", None)
                                 if delta:
-                                    # Content
                                     content = getattr(delta, "content", None)
-                                    # Reasoning Content
                                     reasoningContent = getattr(
                                         delta, "reasoning_content", None
                                     )
+                                    if startedReasoning:
+                                        reasoningEndToken = reasoningEndToken + content
+                                        if "</think>" in reasoningEndToken:
+                                            startedReasoning = False
+
+                                        reasoningContent = content
+                                        content = None
+
+                                    if (
+                                        reasoningStartIndex < 5 and content
+                                    ):
+                                        reasoningStartToken = (
+                                            reasoningStartToken + content
+                                        )
+                                        if "<think>" in reasoningStartToken:
+                                            startedReasoning = True
+                                            reasoningStartIndex = 5
+                                        else:
+                                            reasoningStartIndex += 1
+
                                     reasoning = getattr(delta, "reasoning", None)
-                                    # Search Results
                                     searchResults = None
                                     searchResultsContent: Any = []
                                     executedTools = getattr(

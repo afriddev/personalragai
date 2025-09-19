@@ -53,28 +53,25 @@ class ApiChatService(ApiChatImpl):
         temperature = 0.2
         maxCompletionTokens = 3000
 
-        if request.useCreative:
-            model = OpenaiChatModelsEnum.LLAMA_405B_110K
-            temperature = 1.2
-            maxCompletionTokens = 2000
-        elif request.useFlash:
+        if request.useFlash:
             model = CerebrasChatModelEnum.GPT_OSS_120B
             temperature = 0.3
             maxCompletionTokens = 2000
+
         elif request.useDeepResearch:
-            model = OpenaiChatModelsEnum.SEED_OSS_32B_500K
+            model = OpenaiChatModelsEnum.LLAMA_235B_110K
             temperature = 0.7
-            maxCompletionTokens = 5000
+            maxCompletionTokens = 10000
+
         elif request.useCode:
             model = OpenaiChatModelsEnum.QWEN_480B_CODER_240K
             temperature = 0.2
             maxCompletionTokens = 5000
+
         elif request.useWebSearch:
             model = GroqChatModelsEnum.GROQ_COMPOUND
             temperature = 0.2
             maxCompletionTokens = 8100
-            
-        
 
         response: Any = await chatService.Chat(
             modelParams=ChatRequestModel(
@@ -82,8 +79,11 @@ class ApiChatService(ApiChatImpl):
                 messages=userMessages,
                 temperature=temperature,
                 maxCompletionTokens=maxCompletionTokens,
-                method="groq" if request.useWebSearch else "cerebras" if request.useFlash else "nvidia",
-                
+                method=(
+                    "groq"
+                    if request.useWebSearch
+                    else "cerebras" if request.useFlash else "nvidia"
+                ),
             )
         )
 

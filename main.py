@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from clientservices.services import Chat
 from apicontrollers import ApiChatRouter
 import asyncio
-from database import psqlDbClient, mongoClient
+# from database import psqlDbClient, mongoClient
 
 
 # @asynccontextmanager
@@ -32,4 +32,4 @@ cerebrasChat = Chat()
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
