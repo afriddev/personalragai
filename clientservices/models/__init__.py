@@ -16,6 +16,8 @@ from .EmbeddingModels import (
     RerankResultModel,
     RerankRequestModel,
     RerankResponseModel,
+    ExtarctQaResponseModel,
+    ExtractTextFromYtResponseModel
 )
 
 __all__ = [
@@ -33,4 +35,6 @@ __all__ = [
     "RerankResultModel",
     "RerankRequestModel",
     "RerankResponseModel",
+    "ExtarctQaResponseModel",
+    "ExtractTextFromYtResponseModel"
 ]

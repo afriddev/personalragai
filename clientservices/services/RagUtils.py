@@ -6,26 +6,16 @@ import os
 import re
 import unicodedata
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from clientservices.models import ExtarctQaResponseModel, ExtractTextFromYtResponseModel
+from clientservices.implementations import (
+    DocUtilsImpl,
+    ChunkUtilsImpl,
+    YoutubeUtilsImpl,
+)
+from youtube_transcript_api import YouTubeTranscriptApi
 
-from clientservices.implementations import RagUtilsImpl, ChunkUtils
 
-
-class RagUtils(RagUtilsImpl):
-
-    def ExtractTextFromXlsx(self, docPath: str) -> str:
-        xls = pd.ExcelFile(docPath)
-        allText: list[str] = []
-        for sheetName in xls.sheet_names:
-            df = cast(Any, pd).read_excel(docPath, sheet_name=sheetName, header=None)
-
-            for row in df.itertuples(index=False):
-                rowText = "  ".join(
-                    "" if cast(Any, pd).isna(cell) else str(cell) for cell in row
-                )
-                if rowText.strip():
-                    allText.append(rowText)
-
-        return "\n".join(allText)
+class DocUtils(DocUtilsImpl):
 
     def ExtractTextFromCsv(self, docPath: str) -> str:
         df = cast(Any, pd).read_csv(docPath, header=None)
@@ -106,18 +96,16 @@ class RagUtils(RagUtilsImpl):
         ext = os.path.splitext(docPath)[1].lower()
         if ext == ".pdf":
             return self.ExtractTextAndImagesFromPdf(docPath)
-        elif ext in [".xlsx", ".xls"]:
-            return self.ExtractTextFromXlsx(docPath), []
         elif ext == ".csv":
             return self.ExtractTextFromCsv(docPath), []
         else:
             raise ValueError(f"Unsupported file format: {ext}")
 
 
-class ChunkTextDetails(ChunkUtils):
+class ChunkUtils(ChunkUtilsImpl):
 
     def __init__(self):
-        self.ExtarctTextFromDoc = RagUtils()
+        self.ExtarctTextFromDoc = DocUtils()
 
     def ExtractChunksFromDoc(
         self, file: str, chunkSize: int, chunkOLSize: int | None = 0
@@ -183,3 +171,60 @@ class ChunkTextDetails(ChunkUtils):
             chunks,
             images,
         )
+
+    def ExtarctQaFromText(self, text: str) -> ExtarctQaResponseModel:
+        questions = re.findall(r"<<C1-START>>(.*?)<<C1-END>>", text, re.DOTALL)
+        answers = re.findall(r"<<C2-START>>(.*?)<<C2-END>>", text, re.DOTALL)
+        additionalAnswers = re.findall(r"<<C3-START>>(.*?)<<C3-END>>", text, re.DOTALL)
+
+        combinedAnswer: list[str] = []
+        for ans, addAns in zip(answers, additionalAnswers):
+            if addAns != "None":
+                combinedAnswer.append(f"{ans} Alternative solution is {addAns}")
+            else:
+                combinedAnswer.append(ans)
+        return ExtarctQaResponseModel(questions=questions, answers=combinedAnswer)
+
+
+ytApi = YouTubeTranscriptApi()
+
+
+class YoutubeUtils(YoutubeUtilsImpl):
+    def ExtractText(
+        self, videoId: str, chunkSec: int = 30
+    ) -> list[ExtractTextFromYtResponseModel]:
+        ytApiData = ytApi.fetch(videoId, languages=["hi", "en"])
+        chunkResponse: list[ExtractTextFromYtResponseModel] = []
+        currentChunkText = []
+        currentChunkStart = None
+
+        for item in ytApiData.snippets:
+            windowIndex = int(item.start) // chunkSec
+            windowStart = windowIndex * chunkSec
+
+            if currentChunkStart is None:
+                currentChunkStart = windowStart
+
+            if windowStart == currentChunkStart:
+                currentChunkText.append(item.text)
+            else:
+                chunkResponse.append(
+                    ExtractTextFromYtResponseModel(
+                        videoId=videoId,
+                        chunkText=" ".join(currentChunkText).strip(),
+                        chunkUrl=f"https://www.youtube.com/watch?v={videoId}&t={int(currentChunkStart)}s",
+                    )
+                )
+                currentChunkStart = windowStart
+                currentChunkText = [item.text]
+
+        if currentChunkText and currentChunkStart is not None:
+            chunkResponse.append(
+                ExtractTextFromYtResponseModel(
+                    videoId=videoId,
+                    chunkText=" ".join(currentChunkText).strip(),
+                    chunkUrl=f"https://www.youtube.com/watch?v={videoId}&t={int(currentChunkStart)}s",
+                )
+            )
+
+        return chunkResponse

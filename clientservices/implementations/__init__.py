@@ -1,6 +1,6 @@
 from .ChatImpl import ChatImpl
 from .EmbeddingImpl import EmbeddingImpl
-from .RagUtilsImpl import RagUtilsImpl,ChunkUtils
+from .RagUtilsImpl import DocUtilsImpl,ChunkUtilsImpl,YoutubeUtilsImpl
 
 
-__all__ = ["ChatImpl", "EmbeddingImpl", "RagUtilsImpl","ChunkUtils"]
+__all__ = ["ChatImpl", "EmbeddingImpl", "DocUtilsImpl", "ChunkUtilsImpl", "YoutubeUtilsImpl"]

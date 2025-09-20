@@ -36,3 +36,14 @@ class RerankResultModel(BaseModel):
 
 class RerankResponseModel(BaseModel):
     results: list[RerankResultModel]
+    
+class ExtarctQaResponseModel(BaseModel):
+    questions: list[str]
+    answers: list[str]
+    
+
+
+class ExtractTextFromYtResponseModel(BaseModel):
+    videoId: str
+    chunkText: str
+    chunkUrl: str
