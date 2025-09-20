@@ -42,7 +42,8 @@ class ApiChatService(ApiChatImpl):
             elif request.useCode and request.useDeepResearch == False:
                 return CerebrasChatModelEnum.QWEN_235B
             elif request.useCode == False and request.useDeepResearch:
-                return CerebrasChatModelEnum.QWEN_32B
+                # return CerebrasChatModelEnum.QWEN_32B
+                return CerebrasChatModelEnum.GPT_OSS_120B
             else:
                 return CerebrasChatModelEnum.LLAMA_70B
 

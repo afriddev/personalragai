@@ -28,10 +28,8 @@ openAiClient = AsyncOpenAI(base_url=GetNvidiaBaseUrl(), api_key=GetNvidiaApiKey(
 openAiGroqClient = AsyncOpenAI(base_url=GetGroqBaseUrl(), api_key=GetGroqApiKey())
 
 
-client = AsyncCerebras(
-    api_key=GetCerebrasApiKey(),
-    http_client=DefaultAioHttpClient(),
-    max_retries=5
+cerebrasClient = AsyncCerebras(
+    api_key=GetCerebrasApiKey(), http_client=DefaultAioHttpClient(), max_retries=5
 )
 
 
@@ -48,7 +46,7 @@ class Chat(ChatImpl):
         return ChatResponseModel(status=message)
 
     async def CerebrasChat(self, modelParams: ChatRequestModel) -> Any:
-        createCall = client.chat.completions.create(
+        createCall = cerebrasClient.chat.completions.create(
             messages=cast(Any, modelParams.messages),
             model=modelParams.model.value[0],
             max_completion_tokens=(
