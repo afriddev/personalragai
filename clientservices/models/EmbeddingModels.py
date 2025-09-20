@@ -21,3 +21,18 @@ class EmbeddingResponseModel(BaseModel):
     data: list[EmbeddingDataModel] | None = None
     model: str = "nvidia/nv-embedqa-mistral-7b-v2"
     usage: EmbeddingUsageModel | None = None
+
+
+class RerankRequestModel(BaseModel):
+    query: str
+    docs: list[str]
+    model: str = "nvidia/nv-rerankqa-mistral-4b-v3"
+
+
+class RerankResultModel(BaseModel):
+    score: float
+    doc: str
+
+
+class RerankResponseModel(BaseModel):
+    results: list[RerankResultModel]

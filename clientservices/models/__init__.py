@@ -13,6 +13,9 @@ from .EmbeddingModels import (
     EmbeddingDataModel,
     EmbeddingResponseModel,
     EmbeddingUsageModel,
+    RerankResultModel,
+    RerankRequestModel,
+    RerankResponseModel,
 )
 
 __all__ = [
@@ -27,4 +30,7 @@ __all__ = [
     "EmbeddingDataModel",
     "EmbeddingResponseModel",
     "EmbeddingUsageModel",
+    "RerankResultModel",
+    "RerankRequestModel",
+    "RerankResponseModel",
 ]

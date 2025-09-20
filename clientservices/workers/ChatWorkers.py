@@ -8,6 +8,7 @@ load_dotenv()
 CEREBRAS_API_KEY = cast(Any, os.getenv("CEREBRAS_API_KEY"))
 NVIDIA_API_KEY = cast(Any, os.getenv("NVIDIA_API_KEY"))
 NVIDIA_BASE_URL = cast(Any, os.getenv("NVIDIA_API_BASE_URL"))
+NVIDIA_RERANK_BASE_URL = cast(Any, os.getenv("NVIDIA_API_RERANK_BASE_URL"))
 GROQ_BASE_URL = cast(Any, os.getenv("GROQ_API_BASE_URL"))
 GROQ_API_KEY = cast(Any, os.getenv("GROQ_API_KEY"))
 
@@ -22,6 +23,11 @@ def GetNvidiaApiKey() -> str:
 
 def GetNvidiaBaseUrl() -> str:
     return NVIDIA_BASE_URL
+
+def GetNvidiaRerankBaseUrl() -> str:
+    return NVIDIA_RERANK_BASE_URL 
+
+
 
 
 def GetGroqApiKey() -> str:

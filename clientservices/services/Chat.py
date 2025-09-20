@@ -1,9 +1,7 @@
 import json
 import cerebras.cloud.sdk
 from cerebras.cloud.sdk import AsyncCerebras
-from clientservices.enums import (
-    ChatResponseStatusEnum,
-)
+from clientservices.enums import ChatResponseStatusEnum, CerebrasChatModelEnum
 from clientservices.implementations import ChatImpl
 from clientservices.models import (
     ChatRequestModel,
@@ -33,6 +31,7 @@ openAiGroqClient = AsyncOpenAI(base_url=GetGroqBaseUrl(), api_key=GetGroqApiKey(
 client = AsyncCerebras(
     api_key=GetCerebrasApiKey(),
     http_client=DefaultAioHttpClient(),
+    max_retries=5
 )
 
 
@@ -150,10 +149,24 @@ class Chat(ChatImpl):
             if modelParams.stream:
 
                 async def eventGenerator():
-                    startedReasoning = False
+                    startedReasoning = (
+                        True
+                        if (
+                            modelParams.model
+                            == CerebrasChatModelEnum.QWEN_235B_THINKING
+                        )
+                        else False
+                    )
                     reasoningStartToken: Any = ""
                     reasoningEndToken: Any = ""
-                    reasoningStartIndex = 0
+                    reasoningStartIndex = (
+                        5
+                        if (
+                            modelParams.model
+                            == CerebrasChatModelEnum.QWEN_235B_THINKING
+                        )
+                        else 0
+                    )
                     try:
                         async for chunk in chatCompletion:
                             if getattr(chunk, "choices", None):
@@ -181,7 +194,7 @@ class Chat(ChatImpl):
                                             reasoningStartIndex = 5
                                         else:
                                             reasoningStartIndex += 1
-    
+
                                     reasoning = getattr(delta, "reasoning", None)
                                     searchResults = None
                                     searchResultsContent: Any = []

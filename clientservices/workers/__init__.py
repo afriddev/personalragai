@@ -4,6 +4,7 @@ from .ChatWorkers import (
     GetNvidiaBaseUrl,
     GetGroqApiKey,
     GetGroqBaseUrl,
+    GetNvidiaRerankBaseUrl,
 )
 
 
@@ -13,4 +14,5 @@ __all__ = [
     "GetNvidiaBaseUrl",
     "GetGroqApiKey",
     "GetGroqBaseUrl",
+    "GetNvidiaRerankBaseUrl",
 ]
