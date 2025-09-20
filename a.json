@@ -1,0 +1,152 @@
+entities=[
+    
+    
+    ChunkEntityModel(id=1, entity='Rahul Verma', entityDescription='A senior data scientist at Infosys Limited leading the Sentinel project on AI models for financial fraud detection.'), 
+
+
+    ChunkEntityModel(id=2, entity='Infosys Limited', entityDescription='An Indian multinational information technology company involved in the development of AI models for financial fraud detection through the Sentinel project.'), 
+
+
+    ChunkEntityModel(id=3, entity='Microsoft Corporation', entityDescription='A global technology company collaborating with Infosys on the Sentinel project, providing cloud infrastructure and technical guidance.'), 
+
+
+ChunkEntityModel(id=4, entity='Meera Iyer', entityDescription='Manager of Rahul Verma at Infosys, who reports directly to the Chief Technology Officer.'), 
+
+
+ChunkEntityModel(id=5, entity='Dr. Ramesh Krishnan', entityDescription='The Chief Technology Officer of Infosys Limited, to whom Meera Iyer reports.'), 
+
+
+ChunkEntityModel(id=6, entity='Sentinel', entityDescription='A joint project between Infosys and Microsoft for building advanced AI models for financial fraud detection.'), 
+
+
+ChunkEntityModel(id=7, entity='Arjun Mehta', entityDescription='A colleague of Rahul Verma working on building real-time dashboards for transaction monitoring within the Sentinel project.'), 
+
+
+ChunkEntityModel(id=8, entity='John Smith', entityDescription="Microsoft's technical advisor for the Sentinel project, responsible for ensuring the scalability and security of Azure cloud infrastructure."), 
+
+
+ChunkEntityModel(id=9, entity='Reserve Bank of India', entityDescription="India's central banking institution providing regulatory support and compliance oversight for the Sentinel project."), 
+
+
+ChunkEntityModel(id=10, entity='Indian Institute of Technology, Delhi', entityDescription='An academic institution collaborating with Infosys on the Sentinel project, providing research interns and academic oversight.'), 
+
+
+ChunkEntityModel(id=11, entity='Professor Neha Kapoor', entityDescription='A professor at IIT Delhi providing academic oversight and research interns for the Sentinel project.'), 
+
+
+ChunkEntityModel(id=12, entity='IEEE', entityDescription='A professional organization where the Sentinel project team plans to publish research papers.'), 
+
+
+ChunkEntityModel(id=13, entity='NASSCOM', entityDescription='An Indian industry association hosting a technology summit in Bengaluru where Infosys will demonstrate the Sentinel project.'), 
+
+
+ChunkEntityModel(id=14, entity='Bengaluru', entityDescription='The city in India where the upcoming NASSCOM technology summit will be held.'), 
+
+
+ChunkEntityModel(id=15, entity='Core Analytics Team', entityDescription='A 15-member team at Infosys led by Rahul Verma, specializing in NLP, computer vision, and statistical modeling for the Sentinel project.')] 
+
+
+
+relations=[
+    
+    
+    ChunkRelationModel(id=1, sourceEntityId=1, targetEntityId=2, relation='works at', relationDescription='Rahul Verma is employed as a senior data scientist at Infosys Limited.'), 
+
+
+    ChunkRelationModel(id=2, sourceEntityId=1, targetEntityId=4, relation='managed by', relationDescription='Rahul Verma reports to his manager, Meera Iyer.'), 
+
+
+    ChunkRelationModel(id=3, sourceEntityId=4, targetEntityId=5, relation='reports to', relationDescription='Meera Iyer reports directly to Dr. Ramesh Krishnan, the CTO of Infosys.'), 
+
+
+ChunkRelationModel(id=4, sourceEntityId=1, targetEntityId=6, relation='leads', relationDescription='Rahul Verma is leading the Sentinel project.'), 
+
+
+ChunkRelationModel(id=5, sourceEntityId=2, targetEntityId=6, relation='collaborates on', relationDescription='Infosys Limited is a key participant in the Sentinel project.'), 
+
+
+ChunkRelationModel(id=6, sourceEntityId=3, targetEntityId=6, relation='collaborates on', relationDescription='Microsoft Corporation is collaborating with Infosys on the Sentinel project.'), 
+
+
+ChunkRelationModel(id=7, sourceEntityId=6, targetEntityId=9, relation='supported by', relationDescription='The Sentinel project receives regulatory support from the Reserve Bank of India.'), 
+
+
+ChunkRelationModel(id=8, sourceEntityId=1, targetEntityId=15, relation='leads', relationDescription='Rahul Verma leads the Core Analytics Team at Infosys.'), 
+
+
+ChunkRelationModel(id=9, sourceEntityId=7, targetEntityId=6, relation='works on', relationDescription='Arjun Mehta is working on the Sentinel project, focusing on real-time dashboards.'), 
+
+
+ChunkRelationModel(id=10, sourceEntityId=8, targetEntityId=6, relation='advises on', relationDescription='John Smith is Microsoft’s technical advisor for the Sentinel project.'), 
+
+
+ChunkRelationModel(id=11, sourceEntityId=8, targetEntityId=3, relation='employed by', relationDescription='John Smith is employed by Microsoft Corporation.'), 
+
+
+ChunkRelationModel(id=12, sourceEntityId=10, targetEntityId=6, relation='collaborates with', relationDescription='Indian Institute of Technology, Delhi is collaborating on the Sentinel project.'), 
+
+
+ChunkRelationModel(id=13, sourceEntityId=11, targetEntityId=10, relation='affiliated with', relationDescription='Professor Neha Kapoor is affiliated with IIT Delhi.'), 
+
+
+ChunkRelationModel(id=14, sourceEntityId=11, targetEntityId=6, relation='provides oversight for', relationDescription='Professor Neha Kapoor provides academic oversight for the Sentinel project.'), 
+
+
+ChunkRelationModel(id=15, sourceEntityId=6, targetEntityId=12, relation='publishes in', relationDescription='The Sentinel project team plans to publish research papers in IEEE conferences.'), 
+
+
+ChunkRelationModel(id=16, sourceEntityId=2, targetEntityId=13, relation='presents at', relationDescription='Infosys will present a demonstration of the Sentinel project at the NASSCOM technology summit.'), 
+
+
+ChunkRelationModel(id=17, sourceEntityId=13, targetEntityId=14, relation='hosts event in', relationDescription='NASSCOM will host the technology summit in Bengaluru.')] 
+
+
+
+
+
+claims=[
+    
+    
+    
+    ChunkClaimModel(id=1, entityId=1, claim='holds position', claimDescription='Rahul Verma currently holds the designation of Senior Data Scientist at Infosys Limited.'), 
+
+
+
+    ChunkClaimModel(id=2, entityId=1, claim='project leadership', claimDescription='Rahul Verma is leading the Sentinel project on AI for financial fraud detection.'), 
+
+
+
+    ChunkClaimModel(id=3, entityId=1, claim='career progression', claimDescription='Rahul Verma may be promoted to Principal Data Scientist upon successful delivery of the Sentinel project.'), 
+
+
+
+    ChunkClaimModel(id=4, entityId=6, claim='project funding', claimDescription='The Sentinel project is jointly funded by Infosys and Microsoft.'), 
+
+
+
+ChunkClaimModel(id=5, entityId=6, claim='project timeline', claimDescription='The Sentinel project is scheduled to continue until December 2026.'), 
+
+
+
+ChunkClaimModel(id=6, entityId=6, claim='project goal', claimDescription='The goal of the Sentinel project is to build advanced AI models for financial fraud detection.'), 
+
+
+
+ChunkClaimModel(id=7, entityId=15, claim='team size', claimDescription='The Core Analytics Team consists of 15 members.'), 
+
+
+
+ChunkClaimModel(id=8, entityId=15, claim='team expertise', claimDescription='The Core Analytics Team includes specialists in natural language processing, computer vision, and statistical modeling.'), 
+
+
+
+ChunkClaimModel(id=9, entityId=6, claim='research output goal', claimDescription='The Sentinel project team aims to publish at least two research papers in IEEE conferences within the next year.')]
+
+
+
+
+
+
+
+
+chunk='Rahul Verma, a senior data scientist at Infosys Limited, is currently leading a project in collaboration with Microsoft Corporation on building advanced AI models for financial fraud detection. His manager, Meera Iyer, reports directly to the Chief Technology Officer of Infosys, Dr. Ramesh Krishnan. Rahul works in a core analytics team consisting of 15 members, including specialists in natural language processing, computer vision, and statistical modeling. The project, code-named “Sentinel”, is a joint initiative funded by both Infosys and Microsoft, with support from the Reserve Bank of India to ensure compliance with financial regulations. Within the project, Rahul’s responsibilities include designing anomaly detection systems and coordinating with the compliance team, while his colleague Arjun Mehta focuses on building real-time dashboards for transaction monitoring. Microsoft’s technical advisor, John Smith, ensures that the cloud infrastructure on Azure remains scalable and secure. Rahul is also collaborating with the Indian Institute of Technology, Delhi, where Professor Neha Kapoor is providing academic oversight and offering PhD students as research interns. The team is expected to publish at least two research papers in IEEE conferences over the next year. Additionally, Infosys has committed to presenting a demonstration of Sentinel at the upcoming NASSCOM technology summit in Bengaluru. The project timeline extends until December 2026, with periodic reviews by both Infosys and Microsoft executives. Rahul’s career progression is closely tied to the success of Sentinel, and his current designation as “Senior Data Scientist” may be upgraded to “Principal Data Scientist” upon successful delivery.'

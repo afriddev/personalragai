@@ -1,4 +1,4 @@
 from .Chat import Chat
-from .RagUtils import DocUtils, ChunkUtils
+from .Embedding import Embedding
 
-__all__ = ["Chat", "DocUtils", "ChunkUtils"]
+__all__ = ["Chat", "Embedding"]

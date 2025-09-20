@@ -3,8 +3,8 @@ from pydantic import BaseModel
 
 class EmbeddingRequestModel(BaseModel):
     texts: list[str]
-    model: str = "nvidia/nv-embedqa-mistral-7b-v2"
-    dimensions: int = 1536
+    model: str = "baai/bge-m3"
+    # model: str = "nvidia/nv-embedqa-mistral-7b-v2"
 
 
 class EmbeddingDataModel(BaseModel):
@@ -19,7 +19,8 @@ class EmbeddingUsageModel(BaseModel):
 
 class EmbeddingResponseModel(BaseModel):
     data: list[EmbeddingDataModel] | None = None
-    model: str = "nvidia/nv-embedqa-mistral-7b-v2"
+    model: str = "baai/bge-m3"
+    # model: str = "nvidia/nv-embedqa-mistral-7b-v2"
     usage: EmbeddingUsageModel | None = None
 
 
@@ -36,14 +37,14 @@ class RerankResultModel(BaseModel):
 
 class RerankResponseModel(BaseModel):
     results: list[RerankResultModel]
-    
-class ExtarctQaResponseModel(BaseModel):
-    questions: list[str]
-    answers: list[str]
-    
 
 
-class ExtractTextFromYtResponseModel(BaseModel):
-    videoId: str
-    chunkText: str
-    chunkUrl: str
+class FindTopKresultsFromVectorsRequestModel(BaseModel):
+    sourceVectors: list[list[float]]
+    queryVector: list[float]
+    topK: int = 20
+
+
+class FindTopKresultsFromVectorsResponseModel(BaseModel):
+    distances: list[float] | None = None
+    indeces: list[int] | None = None

@@ -1,78 +1,59 @@
-from openai import OpenAI
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-api_key = os.getenv("NVIDIA_API_KEY")
-from langchain_nvidia_ai_endpoints import NVIDIARerank
-from langchain_core.documents import Document
-
-query = "What is the GPU memory bandwidth of H100 SXM?"
-passages = [
-    "The H100 GPU is paired with the Grace CPU using NVIDIA's ultra-fast chip-to-chip interconnect, delivering 900GB/s of bandwidth, 7X faster than PCIe Gen5. This innovative design will deliver up to 30X higher aggregate system memory bandwidth to the GPU compared to today's fastest servers and up to10X higher pe rformance for applications running terabytes of data.", 
-    "A100 provides up to 20X higher performance over the prior generation and can be partitioned into seven GPU instances to dynamically adjust to shifting demands. The A100 80GB debuts the world's fastest memorry bandwidth at over 2 terabytes per second (TB/s) to run the largest models and datasets.", 
-    "Accelerated servers with H100 deliver the compute power—along with 3 terabytes per second (TB/s) of memory bandwidth per GPU and scalability with NVLink and NVSwitch™.", 
-]
-
-client = NVIDIARerank(
-  model="nvidia/nv-rerankqa-mistral-4b-v3", 
-  api_key=api_key,
-)
-
-response = client.compress_documents(
-  query=query,
-  documents=[Document(page_content=passage) for passage in passages]
-)
-
-print(response)
+# import asyncio
+# from ragservices.services import ChunkInstanceService
+# from clientservices.models import ChatMessageModel
+# from clientservices.enums import ChatMessageRoleEnum
+# from ragservices.utils import EXTARCT_INSTANCE_FROM_CHUNK_PROMPT
 
 
-# client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=api_key)
+# a = ChunkInstanceService()
 
-# completion = client.chat.completions.create(
-#     model="nvidia/llama-3.1-nemotron-ultra-253b-v1",
-#     messages=[
-#         {
-#             "role": "user",
-#             "content": "How to implement graphrag think before answering quesion" , 
-#         }
-#     ],
-#     temperature=0.2,
-#     top_p=0.7,
-#     max_tokens=15000,
-#     extra_body={"chat_template_kwargs": {"thinking": True}},
-#     stream=True,
+
+# chunk = """
+
+# Rahul Verma, a senior data scientist at Infosys Limited, is currently leading a project in collaboration with Microsoft Corporation on building advanced AI models for financial fraud detection. His manager, Meera Iyer, reports directly to the Chief Technology Officer of Infosys, Dr. Ramesh Krishnan. Rahul works in a core analytics team consisting of 15 members, including specialists in natural language processing, computer vision, and statistical modeling. The project, code-named “Sentinel”, is a joint initiative funded by both Infosys and Microsoft, with support from the Reserve Bank of India to ensure compliance with financial regulations. Within the project, Rahul’s responsibilities include designing anomaly detection systems and coordinating with the compliance team, while his colleague Arjun Mehta focuses on building real-time dashboards for transaction monitoring. Microsoft’s technical advisor, John Smith, ensures that the cloud infrastructure on Azure remains scalable and secure. Rahul is also collaborating with the Indian Institute of Technology, Delhi, where Professor Neha Kapoor is providing academic oversight and offering PhD students as research interns. The team is expected to publish at least two research papers in IEEE conferences over the next year. Additionally, Infosys has committed to presenting a demonstration of Sentinel at the upcoming NASSCOM technology summit in Bengaluru. The project timeline extends until December 2026, with periodic reviews by both Infosys and Microsoft executives. Rahul’s career progression is closely tied to the success of Sentinel, and his current designation as “Senior Data Scientist” may be upgraded to “Principal Data Scientist” upon successful delivery.
+
+# """
+# asyncio.run(
+#     a.ExtractChunkInstance(
+#         chunk=chunk,
+#         messages=[
+#             ChatMessageModel(
+#                 role=ChatMessageRoleEnum.SYSTEM,
+#                 content=EXTARCT_INSTANCE_FROM_CHUNK_PROMPT,
+#             ),
+#             ChatMessageModel(
+#                 role=ChatMessageRoleEnum.USER,
+#                 content=chunk,
+#             ),
+#         ],
+#         retryLimit=3,
+#     )
 # )
 
-# for chunk in completion:
-#     print(chunk.choices[0].delta)
+
+from clientservices.services import Embedding
+from clientservices.models import EmbeddingRequestModel
+import asyncio
+
+a = Embedding()
 
 
-
-# from groq import Groq
-# import json
-# api_key = os.getenv("GROQ_API_KEY")
-
-
-# client = Groq()
-
-# response = client.chat.completions.create(
-#     model="groq/compound",
-#     messages=[
-#         {
-#             "role": "user",
-#             "content": "What happened in AI last week? Provide a list of the most important model releases and updates."
-#         }
-#     ],
-#     stream=True,
-    
-# )
-
-# for chunk in response:
-#     tools = getattr(chunk.choices[0].delta, "executed_tools", None)
-#     if tools and len(tools) > 0:
-#         tk = getattr(tools[0], "search_results", None)
-#         results = getattr(tk, "results", None)
-#         if results and len(results) > 0:
-#             print(results)
-
+asyncio.run(
+    a.Embed(
+        request=EmbeddingRequestModel(
+            model="text-embedding-ada-002",
+            texts=[
+                "Hello, world!",
+                "Bonjour le monde!",
+                "Hola, mundo!",
+                "Hallo, Welt!",
+                "Ciao, mondo!",
+                "こんにちは、世界！",
+                "안녕하세요, 세계!",
+                "你好，世界！",
+                "Привет, мир!",
+                "مرحبا بالعالم!",
+            ],
+        )
+    )
+)

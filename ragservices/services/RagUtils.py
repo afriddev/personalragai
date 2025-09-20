@@ -6,13 +6,26 @@ import os
 import re
 import unicodedata
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from clientservices.models import ExtarctQaResponseModel, ExtractTextFromYtResponseModel
-from clientservices.implementations import (
+from ragservices.models import ExtractQaResponseModel, ExtractTextFromYtResponseModel
+from ragservices.implementations import (
     DocUtilsImpl,
     ChunkUtilsImpl,
     YoutubeUtilsImpl,
 )
 from youtube_transcript_api import YouTubeTranscriptApi
+from uuid import uuid4
+
+import base64
+import firebase_admin
+from firebase_admin import credentials, storage
+
+cred = credentials.Certificate("./firebase.json")
+cast(Any, firebase_admin).initialize_app(
+    cred, {"storageBucket": "testproject-b1efd.appspot.com"}
+)
+
+
+ytApi = YouTubeTranscriptApi()
 
 
 class DocUtils(DocUtilsImpl):
@@ -172,7 +185,7 @@ class ChunkUtils(ChunkUtilsImpl):
             images,
         )
 
-    def ExtarctQaFromText(self, text: str) -> ExtarctQaResponseModel:
+    def ExtarctQaFromText(self, text: str) -> ExtractQaResponseModel:
         questions = re.findall(r"<<C1-START>>(.*?)<<C1-END>>", text, re.DOTALL)
         answers = re.findall(r"<<C2-START>>(.*?)<<C2-END>>", text, re.DOTALL)
         additionalAnswers = re.findall(r"<<C3-START>>(.*?)<<C3-END>>", text, re.DOTALL)
@@ -183,10 +196,17 @@ class ChunkUtils(ChunkUtilsImpl):
                 combinedAnswer.append(f"{ans} Alternative solution is {addAns}")
             else:
                 combinedAnswer.append(ans)
-        return ExtarctQaResponseModel(questions=questions, answers=combinedAnswer)
+        return ExtractQaResponseModel(questions=questions, answers=combinedAnswer)
 
-
-ytApi = YouTubeTranscriptApi()
+    async def UploadImageToFirebase(self, base64Str: str, folder: str) -> str:
+        imageBytes: bytes = base64.b64decode(base64Str)
+        filename: str = f"{folder}/{uuid4()}.png"
+        bucket: Any = cast(Any, storage).bucket()
+        blob: Any = bucket.blob(filename)
+        blob.upload_from_string(imageBytes, content_type="image/png")
+        blob.make_public()
+        publicUrl: str = cast(str, blob.public_url)
+        return publicUrl
 
 
 class YoutubeUtils(YoutubeUtilsImpl):

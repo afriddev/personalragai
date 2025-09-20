@@ -1,0 +1,6 @@
+from .RagServicePrompts import EXTARCT_INSTANCE_FROM_CHUNK_PROMPT
+
+
+__all__ = [
+    "EXTARCT_INSTANCE_FROM_CHUNK_PROMPT",
+]
