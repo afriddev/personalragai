@@ -66,7 +66,7 @@ class Chat(ChatImpl):
             temperature=modelParams.temperature,
             top_p=modelParams.topP,
             seed=modelParams.seed,
-            reasoning_effort="high",
+            # reasoning_effort="high",
             response_format=cast(
                 Any,
                 (
@@ -167,6 +167,7 @@ class Chat(ChatImpl):
                                         reasoningEndToken = reasoningEndToken + content
                                         if "</think>" in reasoningEndToken:
                                             startedReasoning = False
+                                            reasoningStartToken = ""
 
                                         reasoningContent = content
                                         content = None
@@ -180,7 +181,7 @@ class Chat(ChatImpl):
                                             reasoningStartIndex = 5
                                         else:
                                             reasoningStartIndex += 1
-
+    
                                     reasoning = getattr(delta, "reasoning", None)
                                     searchResults = None
                                     searchResultsContent: Any = []

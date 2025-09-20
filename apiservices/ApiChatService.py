@@ -24,17 +24,17 @@ class ApiChatService(ApiChatImpl):
 
         if request.useWebSearch:
             return GroqChatModelsEnum.GROQ_COMPOUND
-        
+
         elif request.useFlash == False:
             if request.useCode and request.useDeepResearch:
                 return OpenaiChatModelsEnum.LLAMA_235B_130K
             elif request.useCode and request.useDeepResearch == False:
                 return OpenaiChatModelsEnum.QWEN_480B_CODER_260K
             elif request.useCode == False and request.useDeepResearch:
-                return OpenaiChatModelsEnum.LLAMA_49B_110K
+                return OpenaiChatModelsEnum.SEED_OSS_32B_500K
             else:
                 return OpenaiChatModelsEnum.LLAMA_405B_110K
-        
+
         else:
             if request.useCode and request.useDeepResearch:
                 # return CerebrasChatModelEnum.GPT_OSS_120B
@@ -46,24 +46,18 @@ class ApiChatService(ApiChatImpl):
             else:
                 return CerebrasChatModelEnum.LLAMA_70B
 
-
-
     async def ApiChat(self, request: ApiChatRequestModel) -> StreamingResponse:
         PROFESSIONAL_SYSTEM_PROMPT = """
-You are a highly skilled and professional AI assistant.  
+                You are a highly skilled and professional AI assistant.  
 
-### Core Guidelines:
-- Always respond in **professional Markdown formatting**.  
-- Use **bullet points and emojis** to improve readability.  
-- Maintain a **polite, respectful, and concise tone**.  
-- Provide **clear, accurate, and well-structured information**.  
-- Uphold **confidentiality** and respect **user privacy** at all times.  
+                ### Core Guidelines:
+                - Always respond in **professional Markdown formatting**.  
+                - Use **bullet points and emojis** to improve readability.  
+                - Maintain a **polite, respectful, and concise tone**.  
+                - Provide **clear, accurate, and well-structured information**.  
+                - Uphold **confidentiality** and respect **user privacy** at all times.  
 
-### Response Styling:
-- Use **emojis**(only where they enhance clarity or tone).  
-"""
-
-
+                """
 
         userMessages: list[ChatMessageModel] = [
             ChatMessageModel(
@@ -87,13 +81,12 @@ You are a highly skilled and professional AI assistant.
             ChatMessageModel(role=ChatMessageRoleEnum.USER, content=request.query)
         )
 
-        
         print(self.GetModel(request=request))
         response: Any = await chatService.Chat(
             modelParams=ChatRequestModel(
                 model=self.GetModel(request=request),
                 messages=userMessages,
-                method=(    
+                method=(
                     "groq"
                     if request.useWebSearch
                     else "cerebras" if request.useFlash else "nvidia"

@@ -40,9 +40,7 @@ class CerebrasChatModelEnum(Enum):
 class OpenaiChatModelsEnum(Enum):
     LLAMA_235B_130K = ("nvidia/llama-3.1-nemotron-ultra-253b-v1", 15000, True)
     QWEN_480B_CODER_260K = ("qwen/qwen3-coder-480b-a35b-instruct", 20000, False)
-    LLAMA_49B_110K = ("nvidia/llama-3.3-nemotron-super-49b-v1.5", 110000, 15000, True)
     LLAMA_405B_110K = ("meta/llama-3.1-405b-instruct", 110000, 15000, False)
-    # Optional Models
     SEED_OSS_32B_500K = ("bytedance/seed-oss-36b-instruct", 500000, 20000, True)
 
 
