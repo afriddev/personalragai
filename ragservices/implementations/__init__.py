@@ -1,5 +1,5 @@
 from .RagUtilsImpl import ChunkUtilsImpl, DocUtilsImpl, YoutubeUtilsImpl
-from .RagServiceImpl import ExtractInstancesFromChunkServiceImpl, ExtractChunksFromDocServiceImpl
+from .RagServiceImpl import ExtractInstancesFromChunkServiceImpl, ExtractChunksFromDocServiceImpl,BuildRagServiceImpl
 
 __all__ = [
     "ChunkUtilsImpl",
@@ -7,4 +7,5 @@ __all__ = [
     "YoutubeUtilsImpl",
     "ExtractInstancesFromChunkServiceImpl",
     "ExtractChunksFromDocServiceImpl",
+    "BuildRagServiceImpl"
 ]

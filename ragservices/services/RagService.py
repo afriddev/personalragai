@@ -2,6 +2,7 @@ from sympy import re
 from ragservices.implementations import (
     ExtractInstancesFromChunkServiceImpl,
     ExtractChunksFromDocServiceImpl,
+    BuildRagServiceImpl,
 )
 from clientservices.services import Chat
 from ragservices.models import (
@@ -10,8 +11,9 @@ from ragservices.models import (
     ChunkEntityModel,
     ChunkClaimModel,
     AllQaResponseModel,
+    ExtractTextFromYtResponseModel,
 )
-from ragservices.services.RagUtils import ChunkUtils, DocUtils
+from ragservices.services.RagUtils import ChunkUtils, DocUtils, YoutubeUtils
 from clientservices.models import ChatRequestModel, ChatMessageModel
 from clientservices.enums import CerebrasChatModelEnum, ChatMessageRoleEnum
 from typing import Any, cast
@@ -21,6 +23,7 @@ import re
 cerebrasChat = Chat()
 chunkUtils = ChunkUtils()
 docUtils = DocUtils()
+youtubeUtils = YoutubeUtils()
 
 
 class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
@@ -166,6 +169,7 @@ class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
     def __init__(self):
         self.chunkUtils = chunkUtils
         self.docUtils = docUtils
+        self.youtubeUtils = youtubeUtils
 
     async def ExtractChunksFromPdf(self, file: str) -> list[str]:
         chunks, images = self.chunkUtils.ExtractChunksFromDoc(
@@ -195,4 +199,18 @@ class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
 
     def ExtractQaChunkFromCsv(self, file: str) -> AllQaResponseModel:
         text, _ = self.docUtils.ExtractTextFromDoc(docPath=file)
-        return self.chunkUtils.ExtarctQaFromText(text=text)
+        return self.chunkUtils.ExtractQaFromText(text=text)
+
+    def ExtractChunksFromYtVideo(
+        self, videoId: str
+    ) -> list[ExtractTextFromYtResponseModel]:
+        return self.youtubeUtils.ExtractText(videoId=videoId, chunkSec=200)
+
+
+class BuildRagService(BuildRagServiceImpl):
+
+    def __init__(self):
+        self.ExtractChunksFromDocService = ExtractChunksFromDocService()
+
+    async def BuildRagFromPdf(self, file: str):
+        print("")

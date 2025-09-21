@@ -6,7 +6,7 @@ import os
 import re
 import unicodedata
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from ragservices.models import  ExtractTextFromYtResponseModel,AllQaResponseModel
+from ragservices.models import ExtractTextFromYtResponseModel, AllQaResponseModel
 from ragservices.implementations import (
     DocUtilsImpl,
     ChunkUtilsImpl,
@@ -53,7 +53,7 @@ class DocUtils(DocUtilsImpl):
         for _, page in enumerate(doc, start=1):
             blocks = page.get_text("dict")["blocks"]
             pageItems: List[Tuple[str, float, str]] = []
-    
+
             for block in blocks:
                 if block["type"] == 0:  # text block
                     for line in block.get("lines", []):
@@ -184,7 +184,7 @@ class ChunkUtils(ChunkUtilsImpl):
             images,
         )
 
-    def ExtarctQaFromText(self, text: str) -> AllQaResponseModel:
+    def ExtractQaFromText(self, text: str) -> AllQaResponseModel:
         questions = re.findall(r"<<C1-START>>(.*?)<<C1-END>>", text, re.DOTALL)
         answers = re.findall(r"<<C2-START>>(.*?)<<C2-END>>", text, re.DOTALL)
         additionalAnswers = re.findall(r"<<C3-START>>(.*?)<<C3-END>>", text, re.DOTALL)

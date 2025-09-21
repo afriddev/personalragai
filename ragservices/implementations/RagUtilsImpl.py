@@ -27,7 +27,7 @@ class ChunkUtilsImpl(ABC):
         pass
 
     @abstractmethod
-    def ExtarctQaFromText(self, text: str) -> AllQaResponseModel:
+    def ExtractQaFromText(self, text: str) -> AllQaResponseModel:
         pass
 
     @abstractmethod

@@ -1,5 +1,9 @@
 from abc import ABC, abstractmethod
-from ragservices.models import ChunkInstanceModel, AllQaResponseModel
+from ragservices.models import (
+    ChunkInstanceModel,
+    AllQaResponseModel,
+    ExtractTextFromYtResponseModel,
+)
 from clientservices.models import ChatMessageModel
 
 
@@ -23,5 +27,14 @@ class ExtractChunksFromDocServiceImpl(ABC):
         pass
 
     @abstractmethod
-    def ExtractChunksFromYtVideo(self, file: str) -> AllQaResponseModel:
+    def ExtractChunksFromYtVideo(
+        self, videoId: str
+    ) -> list[ExtractTextFromYtResponseModel]:
+        pass
+
+
+class BuildRagServiceImpl(ABC):
+
+    @abstractmethod
+    async def BuildRagFromPdf(self, file: str):
         pass
