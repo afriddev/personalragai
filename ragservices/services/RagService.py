@@ -210,7 +210,7 @@ class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
 class BuildRagService(BuildRagServiceImpl):
 
     def __init__(self):
-        self.ExtractChunksFromDocService = ExtractChunksFromDocService()
+        self.extractChunksFromDocService = ExtractChunksFromDocService()
 
     async def BuildRagFromPdf(self, file: str):
         print("")
