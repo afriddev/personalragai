@@ -30,6 +30,11 @@ class ChunkUtilsImpl(ABC):
     def ExtarctQaFromText(self, text: str) -> ExtractQaResponseModel:
         pass
 
+    @abstractmethod
+    async def UploadImageToFirebase(
+        self, base64Str: str, folder: str, extension: str
+    ) -> str:
+        pass
 
 class YoutubeUtilsImpl(ABC):
 

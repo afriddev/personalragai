@@ -1,4 +1,5 @@
-from ragservices.implementations import ChunkInstanceImpl
+from sympy import re
+from ragservices.implementations import ChunkInstanceImpl, ChunkProcessingServiceImpl
 from clientservices.services import Chat
 from ragservices.models import (
     ChunkInstanceModel,
@@ -6,13 +7,15 @@ from ragservices.models import (
     ChunkEntityModel,
     ChunkClaimModel,
 )
+from ragservices.services.RagUtils import ChunkUtils
 from clientservices.models import ChatRequestModel, ChatMessageModel
 from clientservices.enums import CerebrasChatModelEnum, ChatMessageRoleEnum
 from typing import Any, cast
 import json
-
+import re
 
 cerebrasChat = Chat()
+chunkUtils = ChunkUtils()
 
 
 class ChunkInstanceService(ChunkInstanceImpl):
@@ -150,5 +153,36 @@ class ChunkInstanceService(ChunkInstanceImpl):
             claims=chunkClaims,
             chunk=cast(str, chatResponse.get("chunk", chunk)),
         )
-        print(response)
         return response
+
+
+class ChunkProcessingService(ChunkProcessingServiceImpl):
+
+    def __init__(self):
+        self.chunkUtils = chunkUtils
+
+    async def HandlePdfChunkProcess(self, file: str) -> list[str]:
+        chunks, images = self.chunkUtils.ExtractChunksFromDoc(
+            file=file, chunkOLSize=100, chunkSize=1200
+        )
+        processedChunk: list[str] = []
+
+        for chunk in chunks:
+
+            matchedIndex = re.findall(r"<<[Ii][Mm][Aa][Gg][Ee]-([0-9]+)>>", chunk)
+            indeces = list(map(int, matchedIndex))
+            if len(indeces) == 0:
+                processedChunk.append(chunk)
+            else:
+                chunkText = chunk
+                for index in indeces:
+                    imageUrl = await self.chunkUtils.UploadImageToFirebase(
+                        base64Str=images[index - 1],
+                        extension="png",
+                        folder="images",
+                    )
+                    token = f"<<image-{index}>>"
+                    chunkText = chunkText.replace(token, f"![Image]({imageUrl})")
+                processedChunk.append(chunkText)
+
+        return processedChunk

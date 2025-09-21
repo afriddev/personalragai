@@ -10,3 +10,10 @@ class ChunkInstanceImpl(ABC):
         self, chunk: str, messages: list[ChatMessageModel], retryLimit: int
     ) -> ChunkInstanceModel:
         pass
+
+
+class ChunkProcessingServiceImpl(ABC):
+
+    @abstractmethod
+    async def HandlePdfChunkProcess(self,file:str) -> list[str]:
+        pass

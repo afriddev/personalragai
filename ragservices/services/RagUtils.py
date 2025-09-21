@@ -15,7 +15,6 @@ from ragservices.implementations import (
 from youtube_transcript_api import YouTubeTranscriptApi
 from uuid import uuid4
 
-import base64
 import firebase_admin
 from firebase_admin import credentials, storage
 
@@ -54,7 +53,7 @@ class DocUtils(DocUtilsImpl):
         for _, page in enumerate(doc, start=1):
             blocks = page.get_text("dict")["blocks"]
             pageItems: List[Tuple[str, float, str]] = []
-
+    
             for block in blocks:
                 if block["type"] == 0:  # text block
                     for line in block.get("lines", []):
@@ -198,12 +197,24 @@ class ChunkUtils(ChunkUtilsImpl):
                 combinedAnswer.append(ans)
         return ExtractQaResponseModel(questions=questions, answers=combinedAnswer)
 
-    async def UploadImageToFirebase(self, base64Str: str, folder: str) -> str:
+    async def UploadImageToFirebase(
+        self, base64Str: str, folder: str, extension: str
+    ) -> str:
+        contentType = (
+            "image/png"
+            if extension.lower() == "png"
+            else (
+                "application/pdf"
+                if (extension.lower() == "pdf")
+                else "text/csv" if (extension.lower() == "csv") else "image/jpeg"
+            )
+        )
+
         imageBytes: bytes = base64.b64decode(base64Str)
-        filename: str = f"{folder}/{uuid4()}.png"
+        filename: str = f"{folder}/{uuid4()}.{extension}"
         bucket: Any = cast(Any, storage).bucket()
         blob: Any = bucket.blob(filename)
-        blob.upload_from_string(imageBytes, content_type="image/png")
+        blob.upload_from_string(imageBytes, content_type=contentType)
         blob.make_public()
         publicUrl: str = cast(str, blob.public_url)
         return publicUrl
