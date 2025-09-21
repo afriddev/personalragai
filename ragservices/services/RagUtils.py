@@ -6,7 +6,7 @@ import os
 import re
 import unicodedata
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from ragservices.models import ExtractQaResponseModel, ExtractTextFromYtResponseModel
+from ragservices.models import  ExtractTextFromYtResponseModel,AllQaResponseModel
 from ragservices.implementations import (
     DocUtilsImpl,
     ChunkUtilsImpl,
@@ -184,7 +184,7 @@ class ChunkUtils(ChunkUtilsImpl):
             images,
         )
 
-    def ExtarctQaFromText(self, text: str) -> ExtractQaResponseModel:
+    def ExtarctQaFromText(self, text: str) -> AllQaResponseModel:
         questions = re.findall(r"<<C1-START>>(.*?)<<C1-END>>", text, re.DOTALL)
         answers = re.findall(r"<<C2-START>>(.*?)<<C2-END>>", text, re.DOTALL)
         additionalAnswers = re.findall(r"<<C3-START>>(.*?)<<C3-END>>", text, re.DOTALL)
@@ -195,7 +195,7 @@ class ChunkUtils(ChunkUtilsImpl):
                 combinedAnswer.append(f"{ans} Alternative solution is {addAns}")
             else:
                 combinedAnswer.append(ans)
-        return ExtractQaResponseModel(questions=questions, answers=combinedAnswer)
+        return AllQaResponseModel(questions=questions, answers=combinedAnswer)
 
     async def UploadImageToFirebase(
         self, base64Str: str, folder: str, extension: str

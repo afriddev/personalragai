@@ -1,7 +1,7 @@
 
 from pydantic import BaseModel
 
-class ExtractQaResponseModel(BaseModel):
+class AllQaResponseModel(BaseModel):
     questions: list[str]
     answers: list[str]
 

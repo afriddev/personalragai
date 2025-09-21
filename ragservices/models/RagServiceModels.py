@@ -27,3 +27,5 @@ class ChunkInstanceModel(BaseModel):
     relations: list[ChunkRelationModel]
     claims: list[ChunkClaimModel]
     chunk: str
+
+

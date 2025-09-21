@@ -1,4 +1,4 @@
-from .RagUtilsModels import ExtractQaResponseModel, ExtractTextFromYtResponseModel
+from .RagUtilsModels import AllQaResponseModel, ExtractTextFromYtResponseModel
 from .RagServiceModels import (
     ChunkClaimModel,
     ChunkEntityModel,
@@ -7,10 +7,11 @@ from .RagServiceModels import (
 )
 
 __all__ = [
-    "ExtractQaResponseModel",
+    "AllQaResponseModel",
     "ExtractTextFromYtResponseModel",
     "ChunkClaimModel",
     "ChunkEntityModel",
     "ChunkInstanceModel",
     "ChunkRelationModel",
+    "AllQaResponseModel"
 ]

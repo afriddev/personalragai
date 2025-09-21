@@ -1,13 +1,17 @@
 from sympy import re
-from ragservices.implementations import ChunkInstanceImpl, ChunkProcessingServiceImpl
+from ragservices.implementations import (
+    ExtractInstancesFromChunkServiceImpl,
+    ExtractChunksFromDocServiceImpl,
+)
 from clientservices.services import Chat
 from ragservices.models import (
     ChunkInstanceModel,
     ChunkRelationModel,
     ChunkEntityModel,
     ChunkClaimModel,
+    AllQaResponseModel,
 )
-from ragservices.services.RagUtils import ChunkUtils
+from ragservices.services.RagUtils import ChunkUtils, DocUtils
 from clientservices.models import ChatRequestModel, ChatMessageModel
 from clientservices.enums import CerebrasChatModelEnum, ChatMessageRoleEnum
 from typing import Any, cast
@@ -16,14 +20,15 @@ import re
 
 cerebrasChat = Chat()
 chunkUtils = ChunkUtils()
+docUtils = DocUtils()
 
 
-class ChunkInstanceService(ChunkInstanceImpl):
+class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
     def __init__(self):
         self.retryLimit = 3
 
-    async def ExtractChunkInstance(
+    async def ExtractInstancesFromChunk(
         self, chunk: str, messages: list[ChatMessageModel], retryLimit: int
     ) -> ChunkInstanceModel:
         if retryLimit > self.retryLimit:
@@ -113,7 +118,7 @@ class ChunkInstanceService(ChunkInstanceImpl):
                 )
             )
 
-            await self.ExtractChunkInstance(
+            await self.ExtractInstancesFromChunk(
                 chunk=chunk,
                 messages=messages,
                 retryLimit=retryLimit + 1,
@@ -156,12 +161,13 @@ class ChunkInstanceService(ChunkInstanceImpl):
         return response
 
 
-class ChunkProcessingService(ChunkProcessingServiceImpl):
+class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
 
     def __init__(self):
         self.chunkUtils = chunkUtils
+        self.docUtils = docUtils
 
-    async def HandlePdfChunkProcess(self, file: str) -> list[str]:
+    async def ExtractChunksFromPdf(self, file: str) -> list[str]:
         chunks, images = self.chunkUtils.ExtractChunksFromDoc(
             file=file, chunkOLSize=100, chunkSize=1200
         )
@@ -186,3 +192,7 @@ class ChunkProcessingService(ChunkProcessingServiceImpl):
                 processedChunk.append(chunkText)
 
         return processedChunk
+
+    def ExtractQaChunkFromCsv(self, file: str) -> AllQaResponseModel:
+        text, _ = self.docUtils.ExtractTextFromDoc(docPath=file)
+        return self.chunkUtils.ExtarctQaFromText(text=text)

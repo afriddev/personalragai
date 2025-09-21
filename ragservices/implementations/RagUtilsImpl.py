@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple
-from ragservices.models import ExtractQaResponseModel, ExtractTextFromYtResponseModel
+from ragservices.models import AllQaResponseModel, ExtractTextFromYtResponseModel
 
 
 class DocUtilsImpl(ABC):
@@ -27,7 +27,7 @@ class ChunkUtilsImpl(ABC):
         pass
 
     @abstractmethod
-    def ExtarctQaFromText(self, text: str) -> ExtractQaResponseModel:
+    def ExtarctQaFromText(self, text: str) -> AllQaResponseModel:
         pass
 
     @abstractmethod
