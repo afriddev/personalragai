@@ -5,6 +5,7 @@ class EmbeddingRequestModel(BaseModel):
     texts: list[str]
     model: str = "baai/bge-m3"
     # model: str = "nvidia/nv-embedqa-mistral-7b-v2"
+    type:str="passage" 
 
 
 class EmbeddingDataModel(BaseModel):

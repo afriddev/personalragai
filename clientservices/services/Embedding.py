@@ -35,14 +35,7 @@ class Embedding(EmbeddingImpl):
                 model=request.model,
                 input=request.texts,
                 encoding_format="float",
-                extra_body={"input_type": "passage", "truncate": "NONE"},
-            )
-
-            print(
-                EmbeddingUsageModel(
-                    prompt_tokens=response.usage.prompt_tokens,
-                    total_tokens=response.usage.total_tokens,
-                )
+                extra_body={"input_type": request.type, "truncate": "NONE"},
             )
 
             return EmbeddingResponseModel(
@@ -88,7 +81,7 @@ class Embedding(EmbeddingImpl):
 
     def FindTopKResultsFromVectors(
         self, request: FindTopKresultsFromVectorsRequestModel
-    ):
+    ) -> FindTopKresultsFromVectorsResponseModel:
         try:
             sourceVec = np.array(request.sourceVectors, dtype="float32")
             queryVec = np.array([request.queryVector], dtype="float32")
