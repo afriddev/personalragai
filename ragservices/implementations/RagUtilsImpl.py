@@ -31,7 +31,7 @@ class ChunkUtilsImpl(ABC):
         pass
 
     @abstractmethod
-    async def UploadImageToFirebase(
+    async def UploadImageToBucket(
         self, base64Str: str, folder: str, extension: str
     ) -> str:
         pass

@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from uuid import UUID, uuid4
 
 
 class ChunkEntityModel(BaseModel):
@@ -29,3 +30,23 @@ class ChunkInstanceModel(BaseModel):
     chunk: str
 
 
+class ChunkEntityNodeModel(BaseModel):
+    id: UUID = uuid4()
+    entity: str
+    entityEmbedding: list[float]
+    entityDescription: str
+    relations: list[str]
+    relationEmbeddings: list[list[float]]
+    claims: list[str]
+    claimEmbeddings: list[list[float]]
+    chunk: str
+    nodeId: UUID | None = None
+
+
+class ChunkNodeModel(BaseModel):
+    id: UUID = uuid4()
+    nodeSummary: str
+    chunks: list[str]
+    nodeRelations: list[str]
+    nodeEntities: list[str]
+    nodeClaims: list[str]

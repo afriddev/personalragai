@@ -196,7 +196,7 @@ class ChunkUtils(ChunkUtilsImpl):
                 combinedAnswer.append(ans)
         return AllQaResponseModel(questions=questions, answers=combinedAnswer)
 
-    async def UploadImageToFirebase(
+    async def UploadImageToBucket(
         self, base64Str: str, folder: str, extension: str
     ) -> str:
         try:

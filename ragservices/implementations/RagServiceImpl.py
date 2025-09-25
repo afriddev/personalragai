@@ -10,7 +10,7 @@ from clientservices.models import ChatMessageModel
 class ExtractInstancesFromChunkServiceImpl(ABC):
 
     @abstractmethod
-    async def ExtracInstancesFromChunk(
+    async def ExtractInstancesFromChunk(
         self, chunk: str, messages: list[ChatMessageModel], retryLimit: int
     ) -> ChunkInstanceModel:
         pass

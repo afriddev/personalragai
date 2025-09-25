@@ -4,6 +4,7 @@ from .RagServiceModels import (
     ChunkEntityModel,
     ChunkInstanceModel,
     ChunkRelationModel,
+    ChunkEntityNodeModel
 )
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     "ChunkEntityModel",
     "ChunkInstanceModel",
     "ChunkRelationModel",
-    "AllQaResponseModel"
+    "AllQaResponseModel",
+    "ChunkEntityNodeModel"
 ]

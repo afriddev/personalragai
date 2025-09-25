@@ -1,10 +1,11 @@
+import time
 from sympy import re
 from ragservices.implementations import (
     ExtractInstancesFromChunkServiceImpl,
     ExtractChunksFromDocServiceImpl,
     BuildRagServiceImpl,
 )
-from clientservices.services import Chat
+from clientservices.services import Chat, Embedding
 from ragservices.models import (
     ChunkInstanceModel,
     ChunkRelationModel,
@@ -12,18 +13,26 @@ from ragservices.models import (
     ChunkClaimModel,
     AllQaResponseModel,
     ExtractTextFromYtResponseModel,
+    ChunkEntityNodeModel,
 )
 from ragservices.services.RagUtils import ChunkUtils, DocUtils, YoutubeUtils
-from clientservices.models import ChatRequestModel, ChatMessageModel
+from clientservices.models import (
+    ChatRequestModel,
+    ChatMessageModel,
+    EmbeddingRequestModel,
+)
 from clientservices.enums import CerebrasChatModelEnum, ChatMessageRoleEnum
+from ragservices.utils import EXTARCT_INSTANCE_FROM_CHUNK_PROMPT
 from typing import Any, cast
 import json
 import re
+from uuid import uuid4
 
 cerebrasChat = Chat()
 chunkUtils = ChunkUtils()
 docUtils = DocUtils()
 youtubeUtils = YoutubeUtils()
+embeddingService = Embedding()
 
 
 class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
@@ -120,6 +129,7 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
                     content="Please generate a valid json object",
                 )
             )
+            time.sleep(1)
 
             await self.ExtractInstancesFromChunk(
                 chunk=chunk,
@@ -186,7 +196,7 @@ class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
             else:
                 chunkText = chunk
                 for index in indeces:
-                    imageUrl = await self.chunkUtils.UploadImageToFirebase(
+                    imageUrl = await self.chunkUtils.UploadImageToBucket(
                         base64Str=images[index - 1],
                         extension="png",
                         folder="images",
@@ -211,6 +221,87 @@ class BuildRagService(BuildRagServiceImpl):
 
     def __init__(self):
         self.extractChunksFromDocService = ExtractChunksFromDocService()
+        self.extractInstanceFromChunkService = ExtractInstanceFromChunkService()
+        self.embedding = embeddingService
 
     async def BuildRagFromPdf(self, file: str):
-        print("")
+        orginalChunks = await self.extractChunksFromDocService.ExtractChunksFromPdf(
+            file
+        )
+        allNodes: list[ChunkEntityNodeModel] = []
+        for chunk in orginalChunks:
+            time.sleep(1)
+            chunkInstance: ChunkInstanceModel = (
+                await self.extractInstanceFromChunkService.ExtractInstancesFromChunk(
+                    chunk=chunk,
+                    messages=[
+                        ChatMessageModel(
+                            role=ChatMessageRoleEnum.SYSTEM,
+                            content=EXTARCT_INSTANCE_FROM_CHUNK_PROMPT,
+                        ),
+                        ChatMessageModel(
+                            role=ChatMessageRoleEnum.USER,
+                            content=f"""
+                                {chunk}
+                            """,
+                        ),
+                    ],
+                    retryLimit=3,
+                )
+            )
+            time.sleep(1)
+            for entity in chunkInstance.entities:
+                entityRelations = [
+                    relation.relation
+                    for relation in chunkInstance.relations
+                    if relation.sourceEntityId == entity.id
+                    or relation.targetEntityId == entity.id
+                ]
+                entityClaims = [
+                    claim.claim
+                    for claim in chunkInstance.claims
+                    if claim.entityId == entity.id
+                ]
+                claims = entityClaims
+                claims.append(entity.entityDescription)
+                entityEmnbeddingResponse = await self.embedding.Embed(
+                    request=EmbeddingRequestModel(
+                        model="baai/bge-m3",
+                        texts=claims,
+                        type="entity",
+                    )
+                )
+                time.sleep(1)
+                relationEmnbeddingResponse: Any = []
+                if len(entityRelations) > 0:
+                    relationEmnbeddingResponse = await self.embedding.Embed(
+                        request=EmbeddingRequestModel(
+                            model="baai/bge-m3",
+                            texts=entityRelations,
+                            type="entity",
+                        )
+                    )
+                time.sleep(1)
+                allNodes.append(
+                    ChunkEntityNodeModel(
+                        id=uuid4(),
+                        entity=entity.entity,
+                        entityDescription=entity.entityDescription,
+                        entityEmbedding=cast(Any, entityEmnbeddingResponse)
+                        .data[len(claims) - 1]
+                        .embedding,
+                        relations=entityRelations,
+                        relationEmbeddings=[
+                            resp.embedding for resp in relationEmnbeddingResponse.data
+                        ],
+                        claims=entityClaims,
+                        claimEmbeddings=[
+                            resp.embedding
+                            for resp in cast(Any, entityEmnbeddingResponse).data[
+                                0, len(claims) - 1
+                            ]
+                        ],
+                        chunk=chunkInstance.chunk,
+                    )
+                )
+                time.sleep(1)
