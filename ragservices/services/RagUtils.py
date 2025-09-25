@@ -1,5 +1,7 @@
 import base64
 import fitz
+import boto3
+from botocore.exceptions import ClientError
 from typing import Any, List, Tuple, Optional, cast
 import pandas as pd
 import os
@@ -15,13 +17,10 @@ from ragservices.implementations import (
 from youtube_transcript_api import YouTubeTranscriptApi
 from uuid import uuid4
 
-import firebase_admin
-from firebase_admin import credentials, storage
 
-cred = credentials.Certificate("./firebase.json")
-cast(Any, firebase_admin).initialize_app(
-    cred, {"storageBucket": "testproject-b1efd.appspot.com"}
-)
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 ytApi = YouTubeTranscriptApi()
@@ -200,24 +199,45 @@ class ChunkUtils(ChunkUtilsImpl):
     async def UploadImageToFirebase(
         self, base64Str: str, folder: str, extension: str
     ) -> str:
-        contentType = (
-            "image/png"
-            if extension.lower() == "png"
-            else (
-                "application/pdf"
-                if (extension.lower() == "pdf")
-                else "text/csv" if (extension.lower() == "csv") else "image/jpeg"
+        try:
+            contentType = (
+                "image/png"
+                if extension.lower() == "png"
+                else (
+                    "application/pdf"
+                    if (extension.lower() == "pdf")
+                    else "text/csv" if (extension.lower() == "csv") else "image/jpeg"
+                )
             )
-        )
 
-        imageBytes: bytes = base64.b64decode(base64Str)
-        filename: str = f"{folder}/{uuid4()}.{extension}"
-        bucket: Any = cast(Any, storage).bucket()
-        blob: Any = bucket.blob(filename)
-        blob.upload_from_string(imageBytes, content_type=contentType)
-        blob.make_public()
-        publicUrl: str = cast(str, blob.public_url)
-        return publicUrl
+            fileBytes: bytes = base64.b64decode(base64Str)
+            ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID", "")
+            SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+            REGION = os.getenv("AWS_REGION", "ap-south-1")
+            BUCKET_NAME = os.getenv("AWS_BUCKET_NAME", "")
+
+            s3 = cast(Any, boto3).client(
+                "s3",
+                aws_access_key_id=ACCESS_KEY,
+                aws_secret_access_key=SECRET_KEY,
+                region_name=REGION,
+            )
+
+            fileName: str = f"{folder}/{uuid4()}.{extension}"
+            key = f"{folder}/{fileName}"
+            s3.put_object(
+                Bucket=BUCKET_NAME,
+                Key=key,
+                Body=fileBytes,
+                ACL="public-read",
+                ContentType=contentType,
+            )
+            publicUrl = f"https://{BUCKET_NAME}.s3.{REGION}.amazonaws.com/{key}"
+
+            return publicUrl
+        except ClientError as e:
+            print("Error uploading to S3:", e)
+            return ""
 
 
 class YoutubeUtils(YoutubeUtilsImpl):
