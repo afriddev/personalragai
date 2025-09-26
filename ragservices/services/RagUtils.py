@@ -44,6 +44,8 @@ class DocUtils(DocUtilsImpl):
         return "\n".join(allText)
 
     def ExtractTextAndImagesFromPdf(self, docPath: str) -> Tuple[str, List[str]]:
+        # pdfBytes = base64.b64decode(docPath)
+        # doc: Any = fitz.open(stream=pdfBytes, filetype="pdf")
         doc: Any = fitz.open(docPath)
         imagesB64: List[str] = []
         imageCounter: int = 1
