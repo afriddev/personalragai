@@ -42,6 +42,7 @@ class OpenaiChatModelsEnum(Enum):
     QWEN_480B_CODER_260K = ("qwen/qwen3-coder-480b-a35b-instruct", 20000, False)
     LLAMA_405B_110K = ("meta/llama-3.1-405b-instruct", 110000, 15000, False)
     SEED_OSS_32B_500K = ("bytedance/seed-oss-36b-instruct", 500000, 20000, True)
+    
 
 
 class GroqChatModelsEnum(Enum):

@@ -1,28 +1,3 @@
-import asyncio
-from ragservices.services import BuildRagService
-
-
-
-
-a = BuildRagService()
-
-
-
-
-async def run():
-    await a.BuildRagFromPdf(
-        file="opd_manual.pdf",
-    )
-    
-    
-    
-    
-asyncio.run(run())
-
-
-
-
-
 
 
 # from clientservices.services import Embedding

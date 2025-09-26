@@ -11,10 +11,13 @@ from database import psqlDbClient
 async def lifespan(app: FastAPI):
     asyncio.create_task(psqlDbClient.connect())
     yield
-    await asyncio.wait_for(psqlDbClient.close(), timeout=3)
+    try:
+        await asyncio.wait_for(psqlDbClient.close(), timeout=3)
+    except asyncio.TimeoutError:
+        print("⚠️ DB close timed out")
 
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,7 +30,8 @@ app.include_router(ApiChatRouter, prefix="/api/v1")
 
 cerebrasChat = Chat()
 
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=False)

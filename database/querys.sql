@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE 
         chunks(
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
-            text TEXT NOT NULL,
+            text TEXT NOT NULL
 )
 
 CREATE TABLE 
