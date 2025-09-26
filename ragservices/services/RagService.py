@@ -1,5 +1,5 @@
 import time
-from sympy import re
+import re
 from ragservices.implementations import (
     ExtractInstancesFromChunkServiceImpl,
     ExtractChunksFromDocServiceImpl,
@@ -15,6 +15,8 @@ from ragservices.models import (
     ExtractTextFromYtResponseModel,
     ChunkEntityNodeModel,
     ChunkNodeModel,
+    ChunkModel,
+    BuildRagProcessFromPdfResponseModel,
 )
 from ragservices.services.RagUtils import ChunkUtils, DocUtils, YoutubeUtils
 from clientservices.models import (
@@ -31,7 +33,6 @@ from ragservices.utils import (
 )
 from typing import Any, cast
 import json
-import re
 from uuid import uuid4
 
 cerebrasChat = Chat()
@@ -191,7 +192,7 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
         cerebrasChatResponse: Any = await cerebrasChat.Chat(
             modelParams=ChatRequestModel(
-                model=CerebrasChatModelEnum.LLAMA_70B,
+                model=CerebrasChatModelEnum.QWEN_235B,
                 messages=messages,
                 responseFormat={
                     "type": "object",
@@ -242,21 +243,21 @@ class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
         for chunk in chunks:
             processedChunk.append(chunk)
 
-            # matchedIndex = re.findall(r"<<[Ii][Mm][Aa][Gg][Ee]-([0-9]+)>>", chunk)
-            # indeces = list(map(int, matchedIndex))
-            # if len(indeces) == 0:
-            #     processedChunk.append(chunk)
-            # else:
-            #     chunkText = chunk
-            #     for index in indeces:
-            #         imageUrl = await self.chunkUtils.UploadImageToBucket(
-            #             base64Str=images[index - 1],
-            #             extension="png",
-            #             folder="images",
-            #         )
-            #         token = f"<<image-{index}>>"
-            #         chunkText = chunkText.replace(token, f"![Image]({imageUrl})")
-            #     processedChunk.append(chunkText)
+            matchedIndex = re.findall(r"<<[Ii][Mm][Aa][Gg][Ee]-([0-9]+)>>", chunk)
+            indeces = list(map(int, matchedIndex))
+            if len(indeces) == 0:
+                processedChunk.append(chunk)
+            else:
+                chunkText = chunk
+                for index in indeces:
+                    imageUrl = await self.chunkUtils.UploadImageToBucket(
+                        base64Str=images[index - 1],
+                        extension="png",
+                        folder="images",
+                    )
+                    token = f"<<image-{index}>>"
+                    chunkText = chunkText.replace(token, f"![Image]({imageUrl})")
+                processedChunk.append(chunkText)
 
         return processedChunk
 
@@ -277,13 +278,16 @@ class BuildRagService(BuildRagServiceImpl):
         self.extractInstanceFromChunkService = ExtractInstanceFromChunkService()
         self.embedding = embeddingService
 
-    async def BuildRagFromPdf(self, file: str):
+    async def BuildRagFromPdf(self, file: str) -> BuildRagProcessFromPdfResponseModel:
         orginalChunks = await self.extractChunksFromDocService.ExtractChunksFromPdf(
             file
         )
         allEntitys: list[ChunkEntityNodeModel] = []
         allNodes: list[ChunkNodeModel] = []
+        allChunks: list[ChunkModel] = []
         for index, chunk in enumerate(orginalChunks):
+            time.sleep(1)
+
             chunkInstance: ChunkInstanceModel = (
                 await self.extractInstanceFromChunkService.ExtractInstancesFromChunk(
                     chunk=chunk,
@@ -302,6 +306,10 @@ class BuildRagService(BuildRagServiceImpl):
                     retryLimit=3,
                 )
             )
+            time.sleep(1)
+            chunkId = uuid4()
+            allChunks.append(ChunkModel(id=chunkId, chunk=chunkInstance.chunk))
+
             for entity in chunkInstance.entities:
                 entityRelations = [
                     relation.relation
@@ -314,14 +322,16 @@ class BuildRagService(BuildRagServiceImpl):
                     for claim in chunkInstance.claims
                     if claim.entityId == entity.id
                 ]
+                print(index)
+                time.sleep(1)
                 entityEmnbeddingResponse = await self.embedding.Embed(
                     request=EmbeddingRequestModel(
                         model="baai/bge-m3",
                         texts=[entity.entityDescription],
-                        type="query",
+                        type="passage",
                     )
                 )
-
+                time.sleep(1)
                 allEntitys.append(
                     ChunkEntityNodeModel(
                         id=uuid4(),
@@ -331,14 +341,16 @@ class BuildRagService(BuildRagServiceImpl):
                         .embedding,
                         relations=entityRelations,
                         claims=entityClaims,
-                        chunk=chunkInstance.chunk,
+                        chunkId=chunkId,
                         chunkIndex=index,
                     )
                 )
+            if index == 2:
+                break
 
         allEntitiesEmbeddings = [entity.entityEmbedding for entity in allEntitys]
 
-        for entityEmbedding in allEntitiesEmbeddings:
+        for index, entityEmbedding in enumerate(allEntitiesEmbeddings):
 
             allMergedNodes: FindTopKresultsFromVectorsResponseModel = (
                 self.embedding.FindTopKResultsFromVectors(
@@ -351,7 +363,6 @@ class BuildRagService(BuildRagServiceImpl):
                     )
                 )
             )
-            print(allMergedNodes)
 
             nodeEntities: list[str] = []
             nodeRelations: list[str] = []
@@ -369,11 +380,12 @@ class BuildRagService(BuildRagServiceImpl):
                 ]
 
                 if len(mergedNodeIndeces) > 0:
+
                     for nodeIndex in mergedNodeIndeces:
+
                         nodeEntities.append(allEntitys[nodeIndex].entityDescription)
                         nodeRelations = nodeRelations + allEntitys[nodeIndex].relations
                         nodeClaims = nodeClaims + allEntitys[nodeIndex].claims
-                        allEntitiesEmbeddings.pop(nodeIndex)
 
             if len(nodeEntities) > 0:
 
@@ -395,7 +407,6 @@ class BuildRagService(BuildRagServiceImpl):
                         ),
                     ],
                 )
-                print(summary)
                 nodeId = uuid4()
                 allNodes.append(
                     ChunkNodeModel(
@@ -405,3 +416,7 @@ class BuildRagService(BuildRagServiceImpl):
                 )
                 for entityIndex in mergedNodeIndeces:
                     allEntitys[entityIndex].nodeId = nodeId
+
+        return BuildRagProcessFromPdfResponseModel(
+            allChunks=allChunks, allEntities=allEntitys, allNodes=allNodes
+        )

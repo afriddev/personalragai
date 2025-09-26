@@ -36,11 +36,22 @@ class ChunkEntityNodeModel(BaseModel):
     entityDescription: str
     relations: list[str]
     claims: list[str]
-    chunk: str
+    chunkId: UUID
     nodeId: UUID | None = None
     chunkIndex: int
+
+
+class ChunkModel(BaseModel):
+    chunk: str
+    id: UUID
 
 
 class ChunkNodeModel(BaseModel):
     nodeId: UUID
     nodeSummary: str
+
+
+class BuildRagProcessFromPdfResponseModel(BaseModel):
+    allChunks: list[ChunkModel]
+    allEntities: list[ChunkEntityNodeModel]
+    allNodes: list[ChunkNodeModel]

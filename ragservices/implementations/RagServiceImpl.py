@@ -3,6 +3,7 @@ from ragservices.models import (
     ChunkInstanceModel,
     AllQaResponseModel,
     ExtractTextFromYtResponseModel,
+    BuildRagProcessFromPdfResponseModel
 )
 from clientservices.models import ChatMessageModel
 
@@ -44,5 +45,5 @@ class ExtractChunksFromDocServiceImpl(ABC):
 class BuildRagServiceImpl(ABC):
 
     @abstractmethod
-    async def BuildRagFromPdf(self, file: str):
+    async def BuildRagFromPdf(self, file: str) -> BuildRagProcessFromPdfResponseModel:
         pass

@@ -1,114 +1,30 @@
-entities=[
-    
-ChunkEntityModel(id=1, entity='Outpatient Department (OPD) module', entityDescription='A module on the HMIS website designed for managing outpatient services in healthcare facilities.'), 
-
-ChunkEntityModel(id=2, entity='HMIS website', entityDescription='The web-based Health Management Information System used for managing healthcare services.'), 
-
-ChunkEntityModel(id=3, entity='Patient Registration', entityDescription='A feature of the OPD module that allows quick and efficient registration of patients, capturing demographic and medical history information.'), 
-
-ChunkEntityModel(id=4, entity='Consultation Records', entityDescription='A feature enabling doctors to document and track patient consultations, diagnoses, and prescribed treatments or medications.'), 
-
-ChunkEntityModel(id=5, entity='Laboratory and Diagnostic Integration', entityDescription='A feature allowing ordering of laboratory and diagnostic services and retrieval of test results for timely diagnosis and treatment.'), 
-
-ChunkEntityModel(id=6, entity='Inventory Integration', entityDescription='A feature enabling doctors to order drugs and items from the pharmacy, view current stock, and raise indents for drugs from the OPD desk.'), 
-
-ChunkEntityModel(id=7, entity='Reporting and Analytics', entityDescription='A feature providing tools to generate reports and analytics to monitor service delivery and identify areas for improvement.'), 
-
-ChunkEntityModel(id=8, entity='Ordering to other services', entityDescription='A feature allowing OPD doctors to order surgeries, procedures, services, or refer patients to other departments or hospitals directly from the OPD desk.'), 
-
-ChunkEntityModel(id=9, entity='healthcare facilities', entityDescription='Institutions such as hospitals or clinics where outpatient services are managed using the OPD module.'), 
-
-ChunkEntityModel(id=10, entity='Laboratories', entityDescription='Facilities that receive test orders and provide diagnostic test results through integration with the OPD module.'), 
-
-ChunkEntityModel(id=11, entity='pharmacy', entityDescription='A department that receives drug orders from doctors via the Inventory Integration feature of the OPD module.'), 
-
-ChunkEntityModel(id=12, entity='Doctors', entityDescription='Medical professionals who use the OPD module to register patients, document consultations, order tests, prescribe medications, and refer patients.')] 
-
-
-
-
-
-
-relations=[
-    
-    
-ChunkRelationModel(id=1, sourceEntityId=1, targetEntityId=2, relation='located on', relationDescription='The Outpatient Department (OPD) module is located on the HMIS website.'), 
-
-
-ChunkRelationModel(id=2, sourceEntityId=1, targetEntityId=9, relation='used in', relationDescription='The OPD module is used in healthcare facilities for managing outpatient services.'), 
-
-
-ChunkRelationModel(id=3, sourceEntityId=1, targetEntityId=3, relation='includes feature', relationDescription='The OPD module includes the Patient Registration feature.'), 
-
-
-ChunkRelationModel(id=4, sourceEntityId=1, targetEntityId=4, relation='includes feature', relationDescription='The OPD module includes the Consultation Records feature.'), 
-
-
-ChunkRelationModel(id=5, sourceEntityId=1, targetEntityId=5, relation='includes feature', relationDescription='The OPD module includes the Laboratory and Diagnostic Integration feature.'), 
-
-
-ChunkRelationModel(id=6, sourceEntityId=5, targetEntityId=10, relation='orders to', relationDescription='The Laboratory and Diagnostic Integration feature orders services to Laboratories.'), 
-
-
-ChunkRelationModel(id=7, sourceEntityId=1, targetEntityId=6, relation='includes feature', relationDescription='The OPD module includes the Inventory Integration feature.'), 
-
-
-ChunkRelationModel(id=8, sourceEntityId=6, targetEntityId=11, relation='orders to', relationDescription='The Inventory Integration feature allows ordering drugs to the pharmacy.'), 
-
-
-ChunkRelationModel(id=9, sourceEntityId=6, targetEntityId=12, relation='used by', relationDescription='Doctors use the Inventory Integration feature to view stock and order drugs.'), 
-
-
-ChunkRelationModel(id=10, sourceEntityId=1, targetEntityId=7, relation='includes feature', relationDescription='The OPD module includes the Reporting and Analytics feature.'), 
-
-
-ChunkRelationModel(id=11, sourceEntityId=7, targetEntityId=12, relation='used by', relationDescription='Doctors use the Reporting and Analytics tools to monitor service delivery.'), 
-
-
-ChunkRelationModel(id=12, sourceEntityId=1, targetEntityId=8, relation='includes feature', relationDescription='The OPD module includes the Ordering to other services feature.'), 
-
-
-ChunkRelationModel(id=13, sourceEntityId=8, targetEntityId=12, relation='initiated by', relationDescription='Doctors initiate orders for surgeries, procedures, and referrals through the Ordering to other services feature.')] 
-
-
-
-
-
-
-
-
-
-
-claims=[
-    
-ChunkClaimModel(id=1, entityId=1, claim='designed for outpatient management', claimDescription='The Outpatient Department (OPD) module is designed for the management of outpatient services in healthcare facilities.'), 
-
-ChunkClaimModel(id=2, entityId=3, claim='captures demographic and medical history', claimDescription='The Patient Registration feature captures essential demographic and medical history information of patients.'), 
-
-ChunkClaimModel(id=3, entityId=4, claim='tracks consultations and treatments', claimDescription='The Consultation Records feature enables documentation and tracking of patient consultations, diagnoses, and prescribed treatments or medications.'), 
-
-ChunkClaimModel(id=4, entityId=5, claim='enables test ordering and result retrieval', claimDescription='The Laboratory and Diagnostic Integration feature allows ordering of tests to laboratories and retrieval of test results.'), 
-
-ChunkClaimModel(id=5, entityId=6, claim='allows drug ordering and stock viewing', claimDescription='The Inventory Integration feature allows doctors to order drugs to the pharmacy and view current stock details.'), 
-
-ChunkClaimModel(id=6, entityId=7, claim='generates reports for service monitoring', claimDescription='The Reporting and Analytics feature provides tools for generating reports to monitor service delivery and identify improvements.'), 
-
-ChunkClaimModel(id=7, entityId=8, claim='supports referrals and service orders', claimDescription='The Ordering to other services feature allows OPD doctors to order surgeries, procedures, services, or refer patients to other departments or hospitals.')] 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-chunk='The Outpatient Department (OPD) module on the HMIS website is designed for management of outpatient services in healthcare facilities. Here are some key features and functions of the OPD module: ◆ Patient Registration : Allows for the quick and efficient registration of patients, capturing essential demographic and medical history information. ◆ Consultation Records : Enables doctors to document and track patient consultations, diagnosis, and prescribed treatments or medications. ◆ Laboratory and Diagnostic Integration : Order laboratory and diagnostic services to Laboratories and retrieve test results, helping in the timely diagnosis and treatment of patients. ◆ Inventory Integration : Order drugs and items to pharmacy directly from doctor desk current stock details can be viewed by doctor helping to raising indent for drugs form OPD desk. ◆ Reporting and Analytics : Provides tools for generating various reports and analytics, helping Doctors monitor service delivery and identify areas for improvement. ◆ Ordering to other services: Ordering other services in Hospital directly from OPD doctor desk like, Surgeries, Procedures, Services, referral to other departments / Hospitals,'
+HMIS hosts the OPD module for managing outpatient services, used by doctors to register patients, document consultations, order tests, and prescribe treatments, improving efficiency and quality of care.
+Outpatient Department (OPD) module is part of the Health Management Information System (HMIS), managing outpatient services and improving efficiency and quality of care in healthcare facilities.
+The Health Management Information System (HMIS) hosts the Outpatient Department (OPD) module for managing outpatient services, improving efficiency and quality of care. The OPD module includes features such as a search function for doctors to find patients, a print button for prescriptions, and integration with the pharmacy department for ordering drugs and viewing stock levels. Patients must initially register at a designated registration counter. Doctors use the OPD Doctor Desk interface to manage patients, and patients can book appointments via a mobile app.
+Pharmacy A department is integrated with the OPD module, allowing doctors to order drugs and view stock levels, and interacts with other entities.
+Search Function Tool enables doctors to search patients by various criteria within the current department list.
+Laboratories receive diagnostic test orders from the OPD module and return test results.
+Search Function Tool enables doctors to search patients by various criteria within the current department list.
+Inventory Integration enables doctors to order drugs and view stock levels from the OPD desk, interacting with the Pharmacy department to facilitate drug ordering and stock management.
+Doctors use the OPD Doctor Desk to manage patients, register new ones, and order prescriptions, with features like search functionality and a print button for completed prescriptions, improving efficiency and patient care.
+Doctors use the Outpatient Department (OPD) module on the HMIS website to manage outpatient services, register patients, document consultations, order tests, and prescribe treatments, improving efficiency and quality of care.
+Total registered patients and their mobile numbers are tracked in real-time in the Department/Unit.
+Total registered patients, patient mobile numbers, and doctors are related through various interactions such as contributing to, having, approving, accepting, and allowing switching, with features like real-time data tracking and registration stamping.
+A search function tool for doctors to find patients within the current department list using various criteria, enabling search for specific referral patients.
+Patients receive medical care and can be registered, searched, or accepted through the OPD system, with their attendance status tracked, and become attended patients after being attended to.
+Patients receiving medical care can be registered and sorted by column headers using up and down arrow icons, with sortable columns.
+Doctors use the OPD Doctor Desk to manage patients, register new ones, and document consultations. The system allows searching for patients by various criteria and displays a print button for prescriptions once completed. New patients must visit the registration counter for initial registration.
+Doctors manage patients and registrations using the OPD system, record vitals and diagnosis, and generate prescriptions. Patients receive outpatient care through the OPD module. The system includes features like search functionality and a print button for prescriptions.
+Referral patients are accepted by doctors before being added to the attendance list, with a search function available to find specific patients, and involves acceptance mechanism and source of referrals.
+The OPD Doctor Desk is a component of HMIS that enables doctors to manage clinical and administrative tasks. It includes a search function to find patients, a vitals button to record patient vitals, and a print button to preview and print prescriptions for completed patients. The registration counter is where new patients register, using a PPO number as an identifier. The system improves efficiency, enhances patient care, reduces errors, and increases patient satisfaction.
+Patient's full name as displayed in the patient list.
+Doctor A uses the OPD Doctor Desk to attend to patients, who are registered at the registration counter, and can be searched or accepted through the OPD system, with new registrations requiring a visit to the counter, and existing patients can be registered through the system, which is also available for emergency visits.
+Mobile Number is the patient's contact number listed in the system.
+OPD Doctor Desk is a component of HMIS OPD module that enables doctors to manage clinical and administrative tasks, register patients, document consultations, order tests, and prescribe treatments, with features like search function, vitals button, and print button for completed prescriptions, improving efficiency and patient care.
+The OPD Doctor Desk is a system interface used by doctors to manage patients, register new patients, document consultations, order tests, and prescribe treatments, featuring a search function, customizable patient list view, and a print button for completed prescriptions, ultimately improving efficiency, enhancing patient care, and reducing errors.
+A doctor uses the OPD Doctor Desk to manage patients, record vitals and complaints, diagnose, and generate prescriptions. The OPD list displays patients registered or booked for appointments. Patients can be registered, searched, or accepted through the system. The Print Button allows doctors to preview and print prescriptions for completed patients.
+Patient's gender is categorized as male, female, or children and is classified into different categories for system classification.
+CR number is a unique identifier for registered patients in the hospital system, used for registration and search purposes and is used to identify patients.
+Patient information includes full name and category for classification.
+Patient information includes full name and age as displayed in the patient list.
+Department/unit A is a medical division within a hospital where doctors provide services, register patients, and track attendance status in real-time, available for both existing patient registration and emergency visits.
