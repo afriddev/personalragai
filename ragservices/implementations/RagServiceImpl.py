@@ -15,6 +15,14 @@ class ExtractInstancesFromChunkServiceImpl(ABC):
     ) -> ChunkInstanceModel:
         pass
 
+    @abstractmethod
+    async def ExtractNodeSummary(
+        self,
+        messages: list[ChatMessageModel],
+        retryLimit: int
+    ) -> str:
+        pass
+
 
 class ExtractChunksFromDocServiceImpl(ABC):
 

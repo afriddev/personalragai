@@ -1,3 +1,3 @@
-from .RagService import ChunkInstanceService
+from .RagService import BuildRagService
 
-__all__ = ["ChunkInstanceService"]
+__all__ = ["BuildRagService"]

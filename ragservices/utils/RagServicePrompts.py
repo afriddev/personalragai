@@ -1,6 +1,4 @@
 EXTARCT_INSTANCE_FROM_CHUNK_PROMPT = """
-
-
 You are an information extraction assistant.  
 Read the given text chunk and extract structured information in JSON format.  
 Follow this schema exactly:
@@ -79,7 +77,38 @@ Rules:
 - **Do not miss any important information.**
 - **Extract the maximum number of entities, relations, and claims from the chunk.**
 
+"""
 
+
+EXTRACT_NODE_SUMMARY_PROMPT = """
+
+You are a summarization assistant whose job is to create a concise, information-dense node summary in JSON.
+
+INPUT: you'll receive:
+- one or more entity description (text)
+- one or more relations (each: relation type, direction, connected entity, brief context)
+- one or more claims (each: claim text, source/confidence if available)
+
+OUTPUT: produce exactly this JSON and nothing else:
+{
+  "response":{
+    "summary": string
+  }
+}
+
+Rules (follow exactly):
+1. The summary value must be plain text (no markdown, no lists, no extra JSON fields).
+2. Produce a compact multi-sentence paragraph (aim for 5–10 sentences, ~100–200 words) that captures all key aspects below.
+3. Cover these points concisely where relevant:
+   - Identity & type: what the entity is (1 short clause).
+   - Core facts/attributes from the entity description (key measurable values or defining traits).
+   - Main claims: important claims and their confidence or source if provided (briefly).
+   - Relations: main relationships (what it connects to and how — use short phrases like "linked to X as Y").
+   - Temporal or medication/actions: any important dates or interventions and outcomes.
+   - Uncertainty / data gaps: state if critical info is missing or low confidence.
+   - If applicable, one short actionable note (e.g., "monitor X", "verify source Y").
+4. Do not invent facts or add new entities not present in the input. If unsure, state uncertainty (e.g., "source not provided" or "confidence unknown").
+6. Output must be valid JSON that exactly matches the schema above. No extra fields, no trailing text.
 
 
 """

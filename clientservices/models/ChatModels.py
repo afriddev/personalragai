@@ -20,7 +20,7 @@ class ChatRequestModel(BaseModel):
         OpenaiChatModelsEnum.LLAMA_405B_110K
     )
     messages: List[ChatMessageModel]
-    maxCompletionTokens: Optional[int] = 3000
+    maxCompletionTokens: Optional[int] = 5000
     stream: Optional[bool] = True
     temperature: Optional[float] = 0.2
     responseFormat: Optional[Any] = None
