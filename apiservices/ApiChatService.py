@@ -84,11 +84,11 @@ class ApiChatService(ApiChatImpl):
                         content="Please generate a valid json object clean query and type",
                     )
                 )
-            await self.PreProcessUserQuery(
-                messages=messages,
-                loopIndex=loopIndex + 1,
-                query=query,
-            )
+                await self.PreProcessUserQuery(
+                    messages=messages,
+                    loopIndex=loopIndex + 1,
+                    query=query,
+                )
 
         except Exception as e:
             messages.append(
@@ -150,17 +150,18 @@ class ApiChatService(ApiChatImpl):
                     content=message.content,
                 )
             )
-        messages.append(
-            ChatMessageModel(
-                role=ChatMessageRoleEnum.USER,
-                content=request.query,
-            )
-        )
+        
         preProcessMessages = messages.copy()
         preProcessMessages.append(
             ChatMessageModel(
                 role=ChatMessageRoleEnum.SYSTEM,
                 content=PRE_PROCESS_USER__QUERY_PROMPT,
+            )
+        )
+        preProcessMessages.append(
+            ChatMessageModel(
+                role=ChatMessageRoleEnum.USER,
+                content=request.query,
             )
         )
 
@@ -191,12 +192,18 @@ class ApiChatService(ApiChatImpl):
                     content="You are **HMIS AI**  your response should be short and concise not more then 100 tokens ",
                 )
             )
+            previousMessages.append(
+            ChatMessageModel(
+                role=ChatMessageRoleEnum.USER,
+                content=preProcessResponse.cleanQuery,
+            )
+        )
             response: Any = await chatService.Chat(
                 modelParams=ChatRequestModel(
-                    model=OpenaiChatModelsEnum.LLAMA_235B_130K,
+                    model=OpenaiChatModelsEnum.LLAMA_405B_110K,
                     messages=previousMessages,
                     topP=0.9,
-                    temperature=0.0,
+                    temperature=1.0,
                     maxCompletionTokens=3000,
                     method=("nvidia"),
                 )

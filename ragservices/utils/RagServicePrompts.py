@@ -205,7 +205,7 @@ MANDATORY RULES (follow in order):
 1. Output EXACTLY valid JSON only. No commentary, no markdown, no extra fields, no wrapper objects, no trailing text.
 2. Allowed "type" values are exactly: PREVIOUS, SEARCH, ABUSE_LANG_ERROR, CONTACT_INFO_ERROR, HMIS (uppercase).
 3. Use conversation CONTEXT to decide PREVIOUS. PREVIOUS applies only when the immediately prior assistant message explicitly invited confirmation/continuation (e.g., "Do you want me to search through other sources for you?", "Would you like more details?", "Shall I continue?") OR when the user’s current message is an explicit follow-up or direct reference to the previous assistant answer (e.g., "about that", "same", "do that", "yes to previous").
-4. If the immediately prior assistant message asked the user directly to confirm/continue/search and the user replies with any short confirmation token (examples: yes, y, sure, okay, continue, no, nah) classify as PREVIOUS and set cleanquery to "(previous)".
+4. If the immediately prior assistant message asked the user directly to confirm/continue/search and the user replies with any short confirmation token (examples: yes, y, sure, okay, continue, no, nah) classify as PREVIOUS and set type to "PREVIOUS".
 5. Treat greetings ("hi", "hello", "hey"), thanks ("thanks", "thank you"), and basic assistant meta-questions ("who are you?", "what can you do?", "how old are you?", "where are you from?", "who created you?", "what is your version?") as PREVIOUS (they are conversational not new search intents).
 6. If the current message contains personal/sensitive identifiers, set type = CONTACT_INFO_ERROR (take precedence over HMIS/SEARCH).
 7. If the current message is abusive/harassing/threatening, set type = ABUSE_LANG_ERROR (take precedence over HMIS/SEARCH).
@@ -214,11 +214,12 @@ MANDATORY RULES (follow in order):
 10. For cleanquery:
     - Return a concise, grammatical English sentence or question summarizing the user's intent (prefer < ~40 tokens).
     - Translate non-English input to English and correct obvious spelling/grammar.
-    - Do not include or repeat prior assistant messages verbatim unless you must set cleanquery to "(previous)" per rule 4.
-    - If type = PREVIOUS and the immediately prior assistant message invited confirmation/continuation, set "cleanquery" exactly to "(previous)".
+    - Do not include or repeat prior assistant messages verbatim unless you must set type to "PREVIOUS" per rule 4.
+    - If type = PREVIOUS and the immediately prior assistant message invited confirmation/continuation, set "type" exactly to "PREVIOUS".
     - If type = PREVIOUS but there is no explicit immediate assistant prompt to continue/search, DO NOT guess — set type = SEARCH and normalize the user message into cleanquery.
 11. If classification is ambiguous, prefer SEARCH (not HMIS).
 12. Validate output: ensure "type" is one of allowed enums. If your internal reasoning would produce any other value, output {"cleanquery":"<normalized text>","type":"SEARCH"} instead.
 13. Do not invent or use hidden context. Use only the provided conversation context.
 cleanquery can never be empty.
+14. cleanquery must be clean user query.
 """
