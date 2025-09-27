@@ -150,18 +150,19 @@ class ApiChatService(ApiChatImpl):
                     content=message.content,
                 )
             )
-        
+
+        messages.append(
+            ChatMessageModel(
+                role=ChatMessageRoleEnum.USER,
+                content=request.query,
+            )
+        )
+
         preProcessMessages = messages.copy()
         preProcessMessages.append(
             ChatMessageModel(
                 role=ChatMessageRoleEnum.SYSTEM,
                 content=PRE_PROCESS_USER__QUERY_PROMPT,
-            )
-        )
-        preProcessMessages.append(
-            ChatMessageModel(
-                role=ChatMessageRoleEnum.USER,
-                content=request.query,
             )
         )
 
@@ -192,12 +193,7 @@ class ApiChatService(ApiChatImpl):
                     content="You are **HMIS AI**  your response should be short and concise not more then 100 tokens ",
                 )
             )
-            previousMessages.append(
-            ChatMessageModel(
-                role=ChatMessageRoleEnum.USER,
-                content=preProcessResponse.cleanQuery,
-            )
-        )
+
             response: Any = await chatService.Chat(
                 modelParams=ChatRequestModel(
                     model=OpenaiChatModelsEnum.LLAMA_405B_110K,
