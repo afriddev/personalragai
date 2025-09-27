@@ -142,7 +142,7 @@ STEPS / REQUIREMENTS
 
 OUTPUT FORMAT RULES
 - Output ONLY valid JSON (no markdown, no extra text).
-- Use this exact JSON shape: {"response":{"questions":[...],"chunk":"<CLEANED_CHUNK>"}}
+- Use this exact JSON shape: {"response":{"questions":[...],"chunk":"<CLEANED_CHUNK>"}}.
 - Use DOUBLE QUOTES for JSON keys and string values.
 - The JSON must be a single line (no newline characters \n).
 - The cleaned chunk string must not include newline escape sequences; it should contain only normal printable characters.
@@ -184,4 +184,41 @@ OUTPUT FORMAT RULES:
 - JSON must be a single line (no \n or escape sequences).
 - Do NOT add any extra keys, comments, or metadata.
 
+"""
+
+
+PRE_PROCESS_USER__QUERY_PROMPT = """
+You are a strict query pre-processor. Always return a JSON object only with two fields:
+  {
+    "cleanquery": "<string>",
+    "type": "<enum>"
+  }
+
+DEFINITIONS (use these exactly):
+- PREVIOUS: The current user message is explicitly confirming, continuing, referring to, or asking a follow-up about the immediately prior assistant message (examples below). Includes short confirmations to a prior assistant prompt ("yes", "no", "okay", "continue"), simple follow-ups related to the last assistant answer, common conversational acknowledgements (greetings, thanks) when they are not new search intents, and direct meta-questions about the assistant (who are you, what can you do, version, creator, age, location).
+- SEARCH: Any generic question or information request that should trigger the knowledge/RAG pipeline (e.g., factual questions, how-to, dosage, definitions), and any ambiguous short message that is not clearly a PREVIOUS confirmation of the immediate assistant prompt.
+- ABUSE_LANG_ERROR: The current user message is abusive, harassing, threatening, or hateful. Consider only the current message content.
+- CONTACT_INFO_ERROR: The current user message contains sensitive personal identifiers (phone numbers, emails, national ID/Aadhar, medical record numbers, account numbers, passwords, street addresses, etc.).
+- HMIS: The current user message is explicitly about hospital operations, OPD, HMIS platform, patient records, registration, prescriptions, lab reports, billing, hospital workflows, or healthcare-information-system mechanics.
+
+MANDATORY RULES (follow in order):
+1. Output EXACTLY valid JSON only. No commentary, no markdown, no extra fields, no wrapper objects, no trailing text.
+2. Allowed "type" values are exactly: PREVIOUS, SEARCH, ABUSE_LANG_ERROR, CONTACT_INFO_ERROR, HMIS (uppercase).
+3. Use conversation CONTEXT to decide PREVIOUS. PREVIOUS applies only when the immediately prior assistant message explicitly invited confirmation/continuation (e.g., "Do you want me to search through other sources for you?", "Would you like more details?", "Shall I continue?") OR when the user’s current message is an explicit follow-up or direct reference to the previous assistant answer (e.g., "about that", "same", "do that", "yes to previous").
+4. If the immediately prior assistant message asked the user directly to confirm/continue/search and the user replies with any short confirmation token (examples: yes, y, sure, okay, continue, no, nah) classify as PREVIOUS and set cleanquery to "(previous)".
+5. Treat greetings ("hi", "hello", "hey"), thanks ("thanks", "thank you"), and basic assistant meta-questions ("who are you?", "what can you do?", "how old are you?", "where are you from?", "who created you?", "what is your version?") as PREVIOUS (they are conversational not new search intents).
+6. If the current message contains personal/sensitive identifiers, set type = CONTACT_INFO_ERROR (take precedence over HMIS/SEARCH).
+7. If the current message is abusive/harassing/threatening, set type = ABUSE_LANG_ERROR (take precedence over HMIS/SEARCH).
+8. If the current message is clearly about hospital systems, OPD, patient records, HMIS workflows, set type = HMIS.
+9. Otherwise set type = SEARCH.
+10. For cleanquery:
+    - Return a concise, grammatical English sentence or question summarizing the user's intent (prefer < ~40 tokens).
+    - Translate non-English input to English and correct obvious spelling/grammar.
+    - Do not include or repeat prior assistant messages verbatim unless you must set cleanquery to "(previous)" per rule 4.
+    - If type = PREVIOUS and the immediately prior assistant message invited confirmation/continuation, set "cleanquery" exactly to "(previous)".
+    - If type = PREVIOUS but there is no explicit immediate assistant prompt to continue/search, DO NOT guess — set type = SEARCH and normalize the user message into cleanquery.
+11. If classification is ambiguous, prefer SEARCH (not HMIS).
+12. Validate output: ensure "type" is one of allowed enums. If your internal reasoning would produce any other value, output {"cleanquery":"<normalized text>","type":"SEARCH"} instead.
+13. Do not invent or use hidden context. Use only the provided conversation context.
+cleanquery can never be empty.
 """

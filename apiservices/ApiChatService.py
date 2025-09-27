@@ -18,6 +18,9 @@ from typing import Any, cast
 from fastapi.responses import StreamingResponse
 from database import psqlDbClient
 import json
+from apimodels import PreProcessUserQueryResponseModel
+from ragservices.utils import PRE_PROCESS_USER__QUERY_PROMPT
+
 
 chatService = Chat()
 embeddingService = Embedding()
@@ -28,6 +31,81 @@ class ApiChatService(ApiChatImpl):
     def __init__(self):
         self.embeddingService = embeddingService
         self.db = psqlDbClient
+        self.RetryLoopIndexLimit = 5
+
+    async def PreProcessUserQuery(
+        self, query: str, messages: list[ChatMessageModel], loopIndex: int
+    ) -> PreProcessUserQueryResponseModel:
+        if loopIndex > self.RetryLoopIndexLimit:
+            raise Exception(
+                "Exception while extarcting relation and questions from chunk"
+            )
+
+        preProcessResponse: Any = await chatService.Chat(
+            modelParams=ChatRequestModel(
+                model=CerebrasChatModelEnum.META_LLAMA_17B_MAVERICK,
+                maxCompletionTokens=1000,
+                messages=messages,
+                stream=False,
+                temperature=0.3,
+                topP=1.0,
+                responseFormat={
+                    "type": "object",
+                    "properties": {
+                        "cleanquery": {"type": "string"},
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "PREVIOUS",
+                                "ABUSE_LANG_ERROR",
+                                "CONTACT_INFO_ERROR",
+                                "HMIS",
+                            ],
+                        },
+                    },
+                    "required": ["type"],
+                    "additionalProperties": False,
+                },
+                method="cerebras",
+            )
+        )
+        print("preProcessResponse", preProcessResponse)
+
+        chatResponse: Any = {}
+        try:
+            chatResponse = json.loads(preProcessResponse.content).get("response")
+            if (
+                chatResponse.get("cleanquery") is None
+                or chatResponse.get("cleanquery") == ""
+            ):
+                messages.append(
+                    ChatMessageModel(
+                        role=ChatMessageRoleEnum.USER,
+                        content="Please generate a valid json object clean query and type",
+                    )
+                )
+            await self.PreProcessUserQuery(
+                messages=messages,
+                loopIndex=loopIndex + 1,
+                query=query,
+            )
+
+        except Exception as e:
+            messages.append(
+                ChatMessageModel(
+                    role=ChatMessageRoleEnum.USER,
+                    content="Please generate a valid json object clean query and type",
+                )
+            )
+            await self.PreProcessUserQuery(
+                messages=messages,
+                loopIndex=loopIndex + 1,
+                query=query,
+            )
+        return PreProcessUserQueryResponseModel(
+            cleanQuery=chatResponse.get("cleanquery"),
+            type=chatResponse.get("type"),
+        )
 
     def GetModel(
         self, request: ApiChatRequestModel
@@ -59,6 +137,79 @@ class ApiChatService(ApiChatImpl):
                 return CerebrasChatModelEnum.LLAMA_70B
 
     async def ApiChat(self, request: ApiChatRequestModel) -> StreamingResponse:
+        messages: list[ChatMessageModel] = []
+
+        for message in request.messages:
+            messages.append(
+                ChatMessageModel(
+                    role=(
+                        ChatMessageRoleEnum.USER
+                        if (message.role == "user")
+                        else ChatMessageRoleEnum.ASSISTANT
+                    ),
+                    content=message.content,
+                )
+            )
+        messages.append(
+            ChatMessageModel(
+                role=ChatMessageRoleEnum.USER,
+                content=request.query,
+            )
+        )
+        preProcessMessages = messages.copy()
+        preProcessMessages.append(
+            ChatMessageModel(
+                role=ChatMessageRoleEnum.SYSTEM,
+                content=PRE_PROCESS_USER__QUERY_PROMPT,
+            )
+        )
+
+        preProcessResponse = await self.PreProcessUserQuery(
+            query=request.query, messages=preProcessMessages, loopIndex=0
+        )
+
+        if preProcessResponse.type == "ABUSE_LANG_ERROR":
+
+            async def abuseStream():
+                yield "data: Sorry, your query contains abusive language.\n\n"
+
+            return StreamingResponse(abuseStream(), media_type="text/event-stream")
+
+        elif preProcessResponse.type == "CONTACT_INFO_ERROR":
+
+            async def contactInfo():
+                yield "data: Sorry, your query contains personal or confidential information.\n\n"
+
+            return StreamingResponse(contactInfo(), media_type="text/event-stream")
+
+        elif preProcessResponse.type == "PREVIOUS":
+            previousMessages: list[ChatMessageModel] = messages.copy()
+
+            previousMessages.append(
+                ChatMessageModel(
+                    role=ChatMessageRoleEnum.SYSTEM,
+                    content="You are **HMIS AI**  your response should be short and concise not more then 100 tokens ",
+                )
+            )
+            response: Any = await chatService.Chat(
+                modelParams=ChatRequestModel(
+                    model=OpenaiChatModelsEnum.LLAMA_235B_130K,
+                    messages=previousMessages,
+                    topP=0.9,
+                    temperature=0.0,
+                    maxCompletionTokens=3000,
+                    method=("nvidia"),
+                )
+            )
+
+            if response is not None:
+                return response
+            else:
+
+                async def errorStream():
+                    yield "data: Sorry, Something went wrong !. Please Try again?\n\n"
+
+                return StreamingResponse(errorStream(), media_type="text/event-stream")
 
         queryVector = await self.embeddingService.Embed(
             request=EmbeddingRequestModel(
@@ -94,9 +245,7 @@ class ApiChatService(ApiChatImpl):
             for row in rows:
                 claim_id = row.get("claim_id")
                 node_text = row.get("node_text") or ""
-                docs.append(
-                    f"Claim: {claim_id}\nChunk: {node_text}\n"
-                )
+                docs.append(f"Claim: {claim_id}\nChunk: {node_text}\n")
 
         PROFESSIONAL_SYSTEM_PROMPT = f"""
                 Retrieved documents:\n\n" + "\n\n".join({docs})
@@ -160,4 +309,3 @@ class ApiChatService(ApiChatImpl):
                 yield "data: Sorry, Something went wrong !. Please Try again?\n\n"
 
             return StreamingResponse(errorStream(), media_type="text/event-stream")
-        
