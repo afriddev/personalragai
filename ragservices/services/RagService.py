@@ -11,7 +11,6 @@ from ragservices.models import (
     ChunkEntityModel,
     ChunkClaimModel,
     AllQaResponseModel,
-    ExtractTextFromYtResponseModel,
     ChunkEntityNodeModel,
     ChunkNodeModel,
     ChunkModel,
@@ -32,6 +31,7 @@ from ragservices.utils import (
     EXTARCT_INSTANCE_FROM_CHUNK_PROMPT,
     EXTRACT_NODE_SUMMARY_PROMPT,
     EXTRACT_QUESTIONS_FROM_CHUNK_PROMPT,
+    CLEAN_YT_CHUNK_PROMPT,
 )
 from typing import Any, cast
 import json
@@ -280,6 +280,51 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
             questions=chatResponse.get("questions", []),
         )
 
+    async def CleanYoutubeChunks(
+        self,
+        messages: list[ChatMessageModel],
+        retryLimit: int,
+    ) -> str:
+        if retryLimit > self.retryLimit:
+            raise Exception("Exception while extracting questions from chunk")
+
+        cerebrasChatResponse: Any = await cerebrasChat.Chat(
+            modelParams=ChatRequestModel(
+                topP=0.9,
+                temperature=0.1,
+                maxCompletionTokens=2000,
+                model=CerebrasChatModelEnum.QWEN_235B,
+                messages=messages,
+                responseFormat={
+                    "type": "object",
+                    "properties": {
+                        "chunk": {"type": "string"},
+                    },
+                    "required": ["chunk"],
+                    "additionalProperties": False,
+                },
+                method="cerebras",
+                stream=False,
+            )
+        )
+        chatResponse: Any = {}
+        try:
+
+            chatResponse = json.loads(cerebrasChatResponse.content).get("response")
+
+        except Exception:
+            print("Error occured while extracting realtions from chunk retrying ...")
+            messages.append(
+                ChatMessageModel(
+                    role=ChatMessageRoleEnum.USER,
+                    content="Please generate a valid json object",
+                )
+            )
+
+            await self.ExtractNodeSummary(messages=messages, retryLimit=retryLimit + 1)
+
+        return chatResponse.get("chunk", "")
+
 
 class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
 
@@ -318,10 +363,12 @@ class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
         text, _ = self.docUtils.ExtractTextFromDoc(docPath=file)
         return self.chunkUtils.ExtractQaFromText(text=text)
 
-    def ExtractChunksFromYtVideo(
-        self, videoId: str
-    ) -> list[ExtractTextFromYtResponseModel]:
-        return self.youtubeUtils.ExtractText(videoId=videoId, chunkSec=200)
+    def ExtractChunksFromYtVideo(self, videoId: str, chunkSec: int) -> list[str]:
+        text = self.youtubeUtils.ExtractText(videoId=videoId, chunkSec=chunkSec)
+        response: list[str] = [
+            f"{item.chunkText} for this [video link]({item.chunkUrl})" for item in text
+        ]
+        return response
 
 
 class BuildRagService(BuildRagServiceImpl):
@@ -330,6 +377,81 @@ class BuildRagService(BuildRagServiceImpl):
         self.extractChunksFromDocService = ExtractChunksFromDocService()
         self.extractInstanceFromChunkService = ExtractInstanceFromChunkService()
         self.embedding = embeddingService
+
+    async def BuildQaRagFromYtVideo(self, videoId: str):
+
+        chunks = self.extractChunksFromDocService.ExtractChunksFromYtVideo(
+            chunkSec=400, videoId=videoId
+        )
+
+        chunkTexts: list[QaRagChunkTextsModel] = []
+        chunkQuestions: list[QaRagQuestionModel] = []
+
+        for chunk in chunks:
+            cleanedChunk = (
+                await self.extractInstanceFromChunkService.CleanYoutubeChunks(
+                    retryLimit=0,
+                    messages=[
+                        ChatMessageModel(
+                            role=ChatMessageRoleEnum.SYSTEM,
+                            content=CLEAN_YT_CHUNK_PROMPT,
+                        ),
+                        ChatMessageModel(
+                            role=ChatMessageRoleEnum.USER,
+                            content=chunk,
+                        ),
+                    ],
+                )
+            )
+            messages: list[ChatMessageModel] = [
+                ChatMessageModel(
+                    role=ChatMessageRoleEnum.SYSTEM,
+                    content=EXTRACT_QUESTIONS_FROM_CHUNK_PROMPT,
+                ),
+                ChatMessageModel(
+                    role=ChatMessageRoleEnum.USER,
+                    content=cleanedChunk,
+                ),
+            ]
+
+            chunkGraphRagInfo = (
+                await self.extractInstanceFromChunkService.ExtractQuestionsFromChunk(
+                    messages=messages, retryLimit=0
+                )
+            )
+            print(chunkGraphRagInfo)
+
+            chunkId = uuid4()
+
+            thisChunkText = QaRagChunkTextsModel(
+                id=chunkId, text=chunkGraphRagInfo.chunk
+            )
+
+            thisChunkQuestions = [
+                QaRagQuestionModel(id=uuid4(), chunkId=chunkId, text=question)
+                for question in chunkGraphRagInfo.questions
+            ]
+
+            texts: list[str] = [chunkGraphRagInfo.chunk]
+            texts.extend(chunkGraphRagInfo.questions)
+
+            textVectors = await self.embedding.Embed(
+                request=EmbeddingRequestModel(
+                    model="baai/bge-m3",
+                    texts=texts,
+                    type="passage",
+                )
+            )
+
+            if textVectors.data is not None:
+                thisChunkText.embedding = textVectors.data[0].embedding
+
+                qLen = len(chunkGraphRagInfo.questions)
+                for i, item in enumerate(textVectors.data[1 : 1 + qLen]):
+                    thisChunkQuestions[i].embedding = item.embedding
+
+            chunkTexts.append(thisChunkText)
+            chunkQuestions.extend(thisChunkQuestions)
 
     async def BuildQaRagFromPdf(self, file: str):
         chunks = await self.extractChunksFromDocService.ExtractChunksFromPdf(file=file)

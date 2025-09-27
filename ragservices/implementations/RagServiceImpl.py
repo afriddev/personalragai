@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from ragservices.models import (
     ChunkInstanceModel,
     AllQaResponseModel,
-    ExtractTextFromYtResponseModel,
     ExtractQuestionsFromChunkResponseModel,
 )
 from clientservices.models import ChatMessageModel
@@ -28,6 +27,12 @@ class ExtractInstancesFromChunkServiceImpl(ABC):
     ) -> ExtractQuestionsFromChunkResponseModel:
         pass
 
+    @abstractmethod
+    async def CleanYoutubeChunks(
+        self, messages: list[ChatMessageModel], retryLimit: int
+    ) -> str:
+        pass
+
 
 class ExtractChunksFromDocServiceImpl(ABC):
 
@@ -40,24 +45,24 @@ class ExtractChunksFromDocServiceImpl(ABC):
         pass
 
     @abstractmethod
-    def ExtractChunksFromYtVideo(
-        self, videoId: str
-    ) -> list[ExtractTextFromYtResponseModel]:
+    def ExtractChunksFromYtVideo(self, videoId: str, chunkSec: int) -> list[str]:
         pass
 
 
 class BuildRagServiceImpl(ABC):
 
     @abstractmethod
+    async def BuildQaRagFromPdf(self, file: str):
+        pass
+
+    @abstractmethod
+    async def BuildQaRagFromCsv(self, file: str):
+        pass
+
+    @abstractmethod
+    async def BuildQaRagFromYtVideo(self, videoId: str):
+        pass
+
+    @abstractmethod
     async def BuildGraphRagFromPdf(self, file: str):
         pass
-    
-    @abstractmethod
-    async def BuildQaRagFromPdf(self, file: str) :
-        pass
-    
-    @abstractmethod
-    async def BuildQaRagFromCsv(self, file: str) :
-        pass
-    
-    
