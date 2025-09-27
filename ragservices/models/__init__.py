@@ -7,7 +7,8 @@ from .RagServiceModels import (
     ChunkEntityNodeModel,
     ChunkNodeModel,
     ChunkModel,
-    BuildRagProcessFromPdfResponseModel
+    ExtractQuestionsFromChunkResponseModel,
+    QaRagChunkTextsModel,QaRagQuestionModel
 )
 
 __all__ = [
@@ -21,5 +22,7 @@ __all__ = [
     "ChunkEntityNodeModel",
     "ChunkNodeModel",
     "ChunkModel",
-    "BuildRagProcessFromPdfResponseModel"
+    "ExtractQuestionsFromChunkResponseModel",
+    "QaRagChunkTextsModel",
+    "QaRagQuestionModel"
 ]

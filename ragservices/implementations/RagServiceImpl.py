@@ -3,7 +3,7 @@ from ragservices.models import (
     ChunkInstanceModel,
     AllQaResponseModel,
     ExtractTextFromYtResponseModel,
-    BuildRagProcessFromPdfResponseModel
+    ExtractQuestionsFromChunkResponseModel,
 )
 from clientservices.models import ChatMessageModel
 
@@ -18,10 +18,14 @@ class ExtractInstancesFromChunkServiceImpl(ABC):
 
     @abstractmethod
     async def ExtractNodeSummary(
-        self,
-        messages: list[ChatMessageModel],
-        retryLimit: int
+        self, messages: list[ChatMessageModel], retryLimit: int
     ) -> str:
+        pass
+
+    @abstractmethod
+    async def ExtractQuestionsFromChunk(
+        self, messages: list[ChatMessageModel], retryLimit: int
+    ) -> ExtractQuestionsFromChunkResponseModel:
         pass
 
 
@@ -45,5 +49,15 @@ class ExtractChunksFromDocServiceImpl(ABC):
 class BuildRagServiceImpl(ABC):
 
     @abstractmethod
-    async def BuildRagFromPdf(self, file: str) -> BuildRagProcessFromPdfResponseModel:
+    async def BuildGraphRagFromPdf(self, file: str):
         pass
+    
+    @abstractmethod
+    async def BuildQaRagFromPdf(self, file: str) :
+        pass
+    
+    @abstractmethod
+    async def BuildQaRagFromCsv(self, file: str) :
+        pass
+    
+    

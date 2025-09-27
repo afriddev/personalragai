@@ -1,4 +1,3 @@
-import time
 import re
 from ragservices.implementations import (
     ExtractInstancesFromChunkServiceImpl,
@@ -16,7 +15,9 @@ from ragservices.models import (
     ChunkEntityNodeModel,
     ChunkNodeModel,
     ChunkModel,
-    BuildRagProcessFromPdfResponseModel,
+    ExtractQuestionsFromChunkResponseModel,
+    QaRagQuestionModel,
+    QaRagChunkTextsModel,
 )
 from ragservices.services.RagUtils import ChunkUtils, DocUtils, YoutubeUtils
 from clientservices.models import (
@@ -30,6 +31,7 @@ from clientservices.enums import CerebrasChatModelEnum, ChatMessageRoleEnum
 from ragservices.utils import (
     EXTARCT_INSTANCE_FROM_CHUNK_PROMPT,
     EXTRACT_NODE_SUMMARY_PROMPT,
+    EXTRACT_QUESTIONS_FROM_CHUNK_PROMPT,
 )
 from typing import Any, cast
 import json
@@ -46,7 +48,7 @@ embeddingService = Embedding()
 class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
     def __init__(self):
-        self.retryLimit = 3
+        self.retryLimit = 5
 
     async def ExtractInstancesFromChunk(
         self, chunk: str, messages: list[ChatMessageModel], retryLimit: int
@@ -56,8 +58,8 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
         cerebrasChatResponse: Any = await cerebrasChat.Chat(
             modelParams=ChatRequestModel(
-                topP=1.0,
-                temperature=0.5,
+                topP=0.9,
+                temperature=0.1,
                 maxCompletionTokens=5000,
                 model=CerebrasChatModelEnum.QWEN_235B,
                 messages=messages,
@@ -131,16 +133,14 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
             chatResponse = json.loads(cerebrasChatResponse.content).get("response")
 
-        except Exception as e:
+        except Exception:
             print("Error occured while extracting realtions from chunk retrying ...")
-            print(e)
             messages.append(
                 ChatMessageModel(
                     role=ChatMessageRoleEnum.USER,
                     content="Please generate a valid json object",
                 )
             )
-            time.sleep(1)
 
             await self.ExtractInstancesFromChunk(
                 chunk=chunk,
@@ -196,10 +196,10 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
         cerebrasChatResponse: Any = await cerebrasChat.Chat(
             modelParams=ChatRequestModel(
-                topP=1.0,
-                temperature=0.5,
-                maxCompletionTokens=2000,
-                model=CerebrasChatModelEnum.QWEN_235B,
+                topP=0.9,
+                temperature=0.1,
+                maxCompletionTokens=3000,
+                model=CerebrasChatModelEnum.LLAMA_70B,
                 messages=messages,
                 responseFormat={
                     "type": "object",
@@ -216,22 +216,69 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
             chatResponse = json.loads(cerebrasChatResponse.content).get("response")
 
-        except Exception as e:
+        except Exception:
             print("Error occured while extracting realtions from chunk retrying ...")
-            print(e)
             messages.append(
                 ChatMessageModel(
                     role=ChatMessageRoleEnum.USER,
                     content="Please generate a valid json object",
                 )
             )
-            time.sleep(1)
 
             await self.ExtractNodeSummary(messages=messages, retryLimit=retryLimit + 1)
 
         summary: str = chatResponse.get("summary", "")
 
         return summary
+
+    async def ExtractQuestionsFromChunk(
+        self,
+        messages: list[ChatMessageModel],
+        retryLimit: int,
+    ) -> ExtractQuestionsFromChunkResponseModel:
+        if retryLimit > self.retryLimit:
+            raise Exception("Exception while extracting questions from chunk")
+
+        cerebrasChatResponse: Any = await cerebrasChat.Chat(
+            modelParams=ChatRequestModel(
+                topP=0.9,
+                temperature=0.1,
+                maxCompletionTokens=2000,
+                model=CerebrasChatModelEnum.QWEN_235B,
+                messages=messages,
+                responseFormat={
+                    "type": "object",
+                    "properties": {
+                        "questions": {"type": "array", "items": {"type": "string"}},
+                        "chunk": {"type": "string"},
+                    },
+                    "required": ["chunk", "questions"],
+                    "additionalProperties": False,
+                },
+                method="cerebras",
+                stream=False,
+            )
+        )
+        chatResponse: Any = {}
+        try:
+
+            chatResponse = json.loads(cerebrasChatResponse.content).get("response")
+
+        except Exception:
+            print("Error occured while extracting realtions from chunk retrying ...")
+            messages.append(
+                ChatMessageModel(
+                    role=ChatMessageRoleEnum.USER,
+                    content="Please generate a valid json object",
+                )
+            )
+
+            await self.ExtractNodeSummary(messages=messages, retryLimit=retryLimit + 1)
+
+        return ExtractQuestionsFromChunkResponseModel(
+            chunk=chatResponse.get("chunk", ""),
+            questions=chatResponse.get("questions", []),
+        )
 
 
 class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
@@ -243,29 +290,27 @@ class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
 
     async def ExtractChunksFromPdf(self, file: str) -> list[str]:
         chunks, images = self.chunkUtils.ExtractChunksFromDoc(
-            file=file, chunkOLSize=0, chunkSize=500
+            file=file, chunkOLSize=100, chunkSize=2000
         )
         processedChunk: list[str] = []
 
         for chunk in chunks:
-            processedChunk.append(chunk)
-            # processedChunk.append(chunk)
-
-            # matchedIndex = re.findall(r"<<[Ii][Mm][Aa][Gg][Ee]-([0-9]+)>>", chunk)
-            # indeces = list(map(int, matchedIndex))
-            # if len(indeces) == 0:
-            #     processedChunk.append(chunk)
-            # else:
-            #     chunkText = chunk
-            #     for index in indeces:
-            #         imageUrl = await self.chunkUtils.UploadImageToBucket(
-            #             base64Str=images[index - 1],
-            #             extension="png",
-            #             folder="images",
-            #         )
-            #         token = f"<<image-{index}>>"
-            #         chunkText = chunkText.replace(token, f"![Image]({imageUrl})")
-            #     processedChunk.append(chunkText)
+            matchedIndex = re.findall(r"<<[Ii][Mm][Aa][Gg][Ee]-([0-9]+)>>", chunk)
+            indeces = list(map(int, matchedIndex))
+            if len(indeces) == 0:
+                processedChunk.append(chunk)
+            else:
+                chunkText = chunk
+                for index in indeces:
+                    imageUrl = await self.chunkUtils.UploadImageToBucket(
+                        base64Str=images[index - 1],
+                        extension="png",
+                        folder="images",
+                    )
+                    token = f"<<image-{index}>>"
+                    print(imageUrl)
+                    chunkText = chunkText.replace(token, f"![Image]({imageUrl})")
+                processedChunk.append(chunkText)
 
         return processedChunk
 
@@ -286,7 +331,89 @@ class BuildRagService(BuildRagServiceImpl):
         self.extractInstanceFromChunkService = ExtractInstanceFromChunkService()
         self.embedding = embeddingService
 
-    async def BuildRagFromPdf(self, file: str) -> BuildRagProcessFromPdfResponseModel:
+    async def BuildQaRagFromPdf(self, file: str):
+        chunks = await self.extractChunksFromDocService.ExtractChunksFromPdf(file=file)
+        chunkTexts: list[QaRagChunkTextsModel] = []
+        chunkQuestions: list[QaRagQuestionModel] = []
+
+        for chunk in chunks:
+            messages: list[ChatMessageModel] = [
+                ChatMessageModel(
+                    role=ChatMessageRoleEnum.SYSTEM,
+                    content=EXTRACT_QUESTIONS_FROM_CHUNK_PROMPT,
+                ),
+                ChatMessageModel(role=ChatMessageRoleEnum.USER, content=chunk),
+            ]
+
+            chunkGraphRagInfo = (
+                await self.extractInstanceFromChunkService.ExtractQuestionsFromChunk(
+                    messages=messages, retryLimit=0
+                )
+            )
+            chunkId = uuid4()
+            thisChunkText = QaRagChunkTextsModel(
+                id=chunkId, text=chunkGraphRagInfo.chunk
+            )
+            thisChunkQuestions = [
+                QaRagQuestionModel(id=uuid4(), chunkId=chunkId, text=rel)
+                for rel in chunkGraphRagInfo.questions
+            ]
+
+            texts: list[str] = []
+            texts.append(chunkGraphRagInfo.chunk)
+            for _, claim in enumerate(chunkGraphRagInfo.questions):
+                texts.append(claim)
+
+            textVectors = await self.embedding.Embed(
+                request=EmbeddingRequestModel(
+                    model="baai/bge-m3",
+                    texts=texts,
+                    type="passage",
+                )
+            )
+            c = 1
+            cLen = len(chunkGraphRagInfo.questions)
+            if textVectors.data is not None:
+                thisChunkText.embedding = textVectors.data[0].embedding
+                for cIndex, item in enumerate(textVectors.data[c : c + cLen]):
+                    thisChunkQuestions[cIndex].embedding = item.embedding
+
+            chunkTexts.append(thisChunkText)
+            chunkQuestions.extend(thisChunkQuestions)
+
+    async def BuildQaRagFromCsv(self, file: str):
+        qa = self.extractChunksFromDocService.ExtractQaChunkFromCsv(file=file)
+
+        chunks: list[QaRagChunkTextsModel] = []
+        questions: list[QaRagQuestionModel] = []
+        qaBatchSize = 10
+
+        for index in range(0, len(qa.questions), qaBatchSize):
+            queVecRes = await self.embedding.Embed(
+                request=EmbeddingRequestModel(
+                    model="baai/bge-m3",
+                    texts=qa.questions[index : index + qaBatchSize],
+                    type="passage",
+                )
+            )
+
+            if queVecRes.data is not None:
+                for idx, q in enumerate(queVecRes.data):
+                    chunkId = uuid4()
+
+                    chunks.append(
+                        QaRagChunkTextsModel(id=chunkId, text=qa.answers[index + idx])
+                    )
+                    questions.append(
+                        QaRagQuestionModel(
+                            id=uuid4(),
+                            chunkId=chunkId,
+                            embedding=q.embedding,
+                            text=qa.questions[index + idx],
+                        )
+                    )
+
+    async def BuildGraphRagFromPdf(self, file: str):
         orginalChunks = await self.extractChunksFromDocService.ExtractChunksFromPdf(
             file
         )
@@ -310,7 +437,7 @@ class BuildRagService(BuildRagServiceImpl):
                             """,
                         ),
                     ],
-                    retryLimit=3,
+                    retryLimit=0,
                 )
             )
             chunkId = uuid4()
@@ -349,7 +476,6 @@ class BuildRagService(BuildRagServiceImpl):
                     )
                 )
             print(f"{index + 1} of {len(orginalChunks)}")
-            
 
         allEntitiesEmbeddings = [entity.entityEmbedding for entity in allEntitys]
 
@@ -394,7 +520,7 @@ class BuildRagService(BuildRagServiceImpl):
             if len(nodeEntities) > 0:
 
                 summary = await self.extractInstanceFromChunkService.ExtractNodeSummary(
-                    retryLimit=3,
+                    retryLimit=0,
                     messages=[
                         ChatMessageModel(
                             role=ChatMessageRoleEnum.SYSTEM,
@@ -421,32 +547,27 @@ class BuildRagService(BuildRagServiceImpl):
                 for entityIndex in mergedNodeIndeces:
                     allEntitys[entityIndex].nodeId = nodeId
 
-        finalChuks = [(str(chunk.id), chunk.chunk) for chunk in allChunks]
+        # finalChuks = [(str(chunk.id), chunk.chunk) for chunk in allChunks]
 
-        async with psqlDbClient.pool.acquire() as conn:
-            await conn.executemany(
-                "INSERT INTO chunks (id, text) VALUES ($1, $2)",
-                finalChuks,
-            )
+        # async with psqlDbClient.pool.acquire() as conn:
+        #     await conn.executemany(
+        #         "INSERT INTO chunks (id, text) VALUES ($1, $2)",
+        #         finalChuks,
+        #     )
 
-            await conn.executemany(
-                "INSERT INTO nodes (id, summary) VALUES ($1, $2)",
-                [(str(node.nodeId), node.nodeSummary) for node in allNodes],
-            )
-            await conn.executemany(
-                "INSERT INTO claims (id,  chunk_id, node_id,embedding) VALUES ($1, $2, $3, $4)",
-                [
-                    (
-                        str(entity.id),
-                        str(entity.chunkId),
-                        str(entity.nodeId) if entity.nodeId else None,
-                        entity.entityEmbedding,
-                    )
-                    for entity in allEntitys
-                ],
-            )
-
-        return BuildRagProcessFromPdfResponseModel(
-            allChunks=allChunks, allEntities=allEntitys, allNodes=allNodes
-        )
-    
+        #     await conn.executemany(
+        #         "INSERT INTO nodes (id, summary) VALUES ($1, $2)",
+        #         [(str(node.nodeId), node.nodeSummary) for node in allNodes],
+        #     )
+        #     await conn.executemany(
+        #         "INSERT INTO claims (id,  chunk_id, node_id,embedding) VALUES ($1, $2, $3, $4)",
+        #         [
+        #             (
+        #                 str(entity.id),
+        #                 str(entity.chunkId),
+        #                 str(entity.nodeId) if entity.nodeId else None,
+        #                 entity.entityEmbedding,
+        #             )
+        #             for entity in allEntitys
+        #         ],
+        #     )

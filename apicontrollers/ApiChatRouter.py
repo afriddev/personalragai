@@ -21,5 +21,5 @@ async def chatAPI(request: ApiChatRequestModel) -> StreamingResponse:
 @ApiChatRouter.get("/a")
 async def emb():
     return await a.BuildRagFromPdf(
-        file="opd_manual.pdf",
+        file="testlaw.pdf",
     )

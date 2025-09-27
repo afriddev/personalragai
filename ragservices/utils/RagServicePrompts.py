@@ -1,4 +1,4 @@
-EXTARCT_INSTANCE_FROM_CHUNK_PROMPT = """
+EXTARCT_INSTANCE_FROM_CHUNK_PROMPT = r"""
 You are an information extraction assistant.  
 Read the given text chunk and extract structured information in JSON format.  
 Follow this schema exactly:
@@ -80,7 +80,7 @@ Rules:
 """
 
 
-EXTRACT_NODE_SUMMARY_PROMPT = """
+EXTRACT_NODE_SUMMARY_PROMPT = r"""
 
 INPUT: you'll receive:
 - one or more entity description
@@ -100,5 +100,53 @@ Rules (follow exactly):
 3. Dont start with The node represents  or entitty starts with  or similar phrases.
 4. Produce summary as large as possible without missing any key points.
 5. Sumary should be in one paragraph. and include all key points
+6. Dont include any information not present in the input.
+7. Dont add any extra fields or commentary.
+
+"""
+
+
+EXTRACT_QUESTIONS_FROM_CHUNK_PROMPT = r"""
+TASK
+Return ONLY valid JSON per the schema for ONE input chunk.
+
+INPUT
+{ "chunk": "..." }
+
+OUTPUT (conceptual)
+{
+  "response": {
+    "questions": ["..."],
+    "chunk": "..."
+  }
+}
+
+GOAL
+- Extract answerable questions from the chunk.
+- Echo a minimally cleaned version of the input chunk.
+
+STEPS / REQUIREMENTS
+1. Clean the input chunk minimally and echo it in response.chunk:
+   - Trim leading/trailing whitespace.
+   - Collapse repeated spaces and newlines into a single space.
+   - Remove unprintable control characters.
+   - Preserve ALL URLs and image links exactly as they appear.
+2. Questions:
+   - Create as many concise, answerable questions as can be answered using only information present in the chunk.
+   - Each question must be directly answerable from the chunk content.
+   - Questions should be clear and unambiguous.
+   - Do NOT include URLs or image tokens inside questions.
+3. General:
+   - Do not invent metadata or additional keys.
+   - If questions can be extracted, return empty arrays for those fields.
+
+OUTPUT FORMAT RULES
+- Output ONLY valid JSON (no markdown, no extra text).
+- Use this exact JSON shape: {"response":{"questions":[...],"chunk":"<CLEANED_CHUNK>"}}
+- Use DOUBLE QUOTES for JSON keys and string values.
+- The JSON must be a single line (no newline characters \n).
+- The cleaned chunk string must not include newline escape sequences; it should contain only normal printable characters.
+- Do NOT include any extra keys, comments, or metadata.
+
 
 """

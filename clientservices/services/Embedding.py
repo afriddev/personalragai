@@ -1,8 +1,6 @@
+import random
 from openai import AsyncOpenAI
-from clientservices.workers import (
-    GetNvidiaApiKey,
-    GetNvidiaBaseUrl,
-)
+from clientservices.workers import GetNvidiaApiKey, GetNvidiaBaseUrl, GetNvidiaApiKey1
 from clientservices.implementations import EmbeddingImpl
 from clientservices.models import (
     EmbeddingRequestModel,
@@ -31,6 +29,8 @@ class Embedding(EmbeddingImpl):
 
     async def Embed(self, request: EmbeddingRequestModel) -> EmbeddingResponseModel:
         try:
+            nvidiaApiKeys = [GetNvidiaApiKey(), GetNvidiaApiKey1()]
+            openAiClient.api_key = random.choice(nvidiaApiKeys)
             response = await openAiClient.embeddings.create(
                 model=request.model,
                 input=request.texts,

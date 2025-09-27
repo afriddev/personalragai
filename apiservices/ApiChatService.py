@@ -93,27 +93,25 @@ class ApiChatService(ApiChatImpl):
 
             for row in rows:
                 claim_id = row.get("claim_id")
-                chunk_text = row.get("chunk_text") or ""
                 node_text = row.get("node_text") or ""
                 docs.append(
-                    f"Claim: {claim_id}\nChunk: {chunk_text}\nNode: {node_text}"
+                    f"Claim: {claim_id}\nChunk: {node_text}\n"
                 )
 
-        PROFESSIONAL_SYSTEM_PROMPT = """
-                You are a highly skilled and professional AI assistant.
+        PROFESSIONAL_SYSTEM_PROMPT = f"""
+                Retrieved documents:\n\n" + "\n\n".join({docs})
+                You are given:
+                - A list `Retrieved  documents ` retrived from a knowledge base.
 
-                When responding to user queries, you must utilize the provided context from retrieved documents to ensure accuracy and relevance.
-                Dont take any information from outside the provided context.
-                If the context does not contain sufficient information to answer the query, respond with "I'm sorry, I don't have enough information to answer that question."
-                Maintain a formal and professional tone in all your responses.
-                Your goal is to provide clear, concise, and accurate information based on the context given.
+                Strict task (follow exactly):
+              
+                . If there is no answer in the retrieved docs, respond with:
+                "We don't have any information about that. do you want me to search through other sources for you ?"
 
-                **rules to follow**
-                 - If you don't know the answer, just say that you don't know. Don't try to make up an answer.
-                 - If the question is not related to the context, politely inform the user that you are unable to answer the question.
-                 - Dont create any information from outside the provided context.
-                - Always format your answers in markdown.
 
+                Formatting constraints:
+                - Output plain Markdown only. No raw HTML, no tables.
+                
 
                 """
 
@@ -121,10 +119,6 @@ class ApiChatService(ApiChatImpl):
             ChatMessageModel(
                 role=ChatMessageRoleEnum.SYSTEM,
                 content=PROFESSIONAL_SYSTEM_PROMPT,
-            ),
-            ChatMessageModel(
-                role=ChatMessageRoleEnum.SYSTEM,
-                content="Retrieved documents:\n\n" + "\n\n".join(docs),
             ),
         ]
 

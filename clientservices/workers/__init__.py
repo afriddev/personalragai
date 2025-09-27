@@ -1,6 +1,11 @@
 from .ChatWorkers import (
     GetCerebrasApiKey,
+    GetCerebrasApiKey1,
+    GetCerebrasApiKey2,
+    GetCerebrasApiKey3,
+    GetCerebrasApiKey4,
     GetNvidiaApiKey,
+    GetNvidiaApiKey1,
     GetNvidiaBaseUrl,
     GetGroqApiKey,
     GetGroqBaseUrl,
@@ -10,7 +15,12 @@ from .ChatWorkers import (
 
 __all__ = [
     "GetCerebrasApiKey",
+    "GetCerebrasApiKey1",
+    "GetCerebrasApiKey2",
+    "GetCerebrasApiKey3",
+    "GetCerebrasApiKey4",
     "GetNvidiaApiKey",
+    "GetNvidiaApiKey1",
     "GetNvidiaBaseUrl",
     "GetGroqApiKey",
     "GetGroqBaseUrl",

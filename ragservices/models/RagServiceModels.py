@@ -51,7 +51,22 @@ class ChunkNodeModel(BaseModel):
     nodeSummary: str
 
 
-class BuildRagProcessFromPdfResponseModel(BaseModel):
-    allChunks: list[ChunkModel]
-    allEntities: list[ChunkEntityNodeModel]
-    allNodes: list[ChunkNodeModel]
+
+class ExtractQuestionsFromChunkResponseModel(BaseModel):
+    questions: list[str]
+    chunk: str
+
+
+
+
+class QaRagChunkTextsModel(BaseModel):
+    id: UUID
+    text: str
+    embedding: list[float] | None = None
+
+
+class QaRagQuestionModel(BaseModel):
+    id: UUID
+    chunkId: UUID
+    text: str
+    embedding: list[float] | None = None

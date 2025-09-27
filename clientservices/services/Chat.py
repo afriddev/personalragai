@@ -1,4 +1,5 @@
 import json
+import random
 import cerebras.cloud.sdk
 from cerebras.cloud.sdk import AsyncCerebras
 from clientservices.enums import ChatResponseStatusEnum, CerebrasChatModelEnum
@@ -16,6 +17,10 @@ from cerebras.cloud.sdk import DefaultAioHttpClient
 from typing import Any, cast
 from clientservices.workers import (
     GetCerebrasApiKey,
+    GetCerebrasApiKey1,
+    GetCerebrasApiKey2,
+    GetCerebrasApiKey3,
+    GetCerebrasApiKey4,
     GetNvidiaApiKey,
     GetNvidiaBaseUrl,
     GetGroqBaseUrl,
@@ -46,6 +51,16 @@ class Chat(ChatImpl):
         return ChatResponseModel(status=message)
 
     async def CerebrasChat(self, modelParams: ChatRequestModel) -> Any:
+        cerebrasApiKeys = [
+            GetCerebrasApiKey(),
+            GetCerebrasApiKey1(),
+            GetCerebrasApiKey2(),
+            GetCerebrasApiKey3(),
+            GetCerebrasApiKey4()
+        ]
+        cerebrasClient.api_key = random.choice(cerebrasApiKeys)
+        
+        
         createCall = cerebrasClient.chat.completions.create(
             messages=cast(Any, modelParams.messages),
             model=modelParams.model.value[0],
