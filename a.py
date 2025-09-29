@@ -1,3 +1,32 @@
+# a = "afrid shaik"
+# print(a.split())
+
+
+from rank_bm25 import BM25Okapi
+from langchain_core.documents import Document
+
+docs = [
+    Document(page_content="NewRegistration", metadata={"index": 0}),
+    Document(page_content="PatientLookup", metadata={"index": 1}),
+    Document(page_content="DigitalInterface", metadata={"index": 2}),
+    Document(page_content="fo", metadata={"index": 3}),
+    Document(page_content="foo bar", metadata={"index": 4}),
+]
+
+texts = [d.page_content for d in docs]
+tokenized = [t.split() for t in texts]
+bm25 = BM25Okapi(tokenized)
+
+query = "Regist".split()
+scores = bm25.get_scores(query)
+
+# print documents ordered by score desc with score
+ranked = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
+for doc, score in ranked:
+    if score != 0.0:
+        print(f"{doc} => {score}")
+
+
 
 
 # from clientservices.services import Embedding

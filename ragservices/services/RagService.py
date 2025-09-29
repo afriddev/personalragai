@@ -37,6 +37,9 @@ from typing import Any, cast
 import json
 from uuid import uuid4
 from database import psqlDbClient
+from rank_bm25 import BM25Okapi
+from langchain_core.documents import Document
+
 
 cerebrasChat = Chat()
 chunkUtils = ChunkUtils()
@@ -59,8 +62,8 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
         cerebrasChatResponse: Any = await cerebrasChat.Chat(
             modelParams=ChatRequestModel(
                 topP=0.9,
-                temperature=0.1,
-                maxCompletionTokens=5000,
+                temperature=0.3,
+                maxCompletionTokens=8000,
                 model=CerebrasChatModelEnum.QWEN_235B,
                 messages=messages,
                 responseFormat={
@@ -133,7 +136,8 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
             chatResponse = json.loads(cerebrasChatResponse.content).get("response")
 
-        except Exception:
+        except Exception as e:
+            print(e)
             print("Error occured while extracting realtions from chunk retrying ...")
             messages.append(
                 ChatMessageModel(
@@ -340,22 +344,23 @@ class ExtractChunksFromDocService(ExtractChunksFromDocServiceImpl):
         processedChunk: list[str] = []
 
         for chunk in chunks:
-            matchedIndex = re.findall(r"<<[Ii][Mm][Aa][Gg][Ee]-([0-9]+)>>", chunk)
-            indeces = list(map(int, matchedIndex))
-            if len(indeces) == 0:
-                processedChunk.append(chunk)
-            else:
-                chunkText = chunk
-                for index in indeces:
-                    imageUrl = await self.chunkUtils.UploadImageToBucket(
-                        base64Str=images[index - 1],
-                        extension="png",
-                        folder="images",
-                    )
-                    token = f"<<image-{index}>>"
-                    print(imageUrl)
-                    chunkText = chunkText.replace(token, f"![Image]({imageUrl})")
-                processedChunk.append(chunkText)
+            processedChunk.append(chunk)
+            # matchedIndex = re.findall(r"<<[Ii][Mm][Aa][Gg][Ee]-([0-9]+)>>", chunk)
+            # indeces = list(map(int, matchedIndex))
+            # if len(indeces) == 0:
+            #     processedChunk.append(chunk)
+            # else:
+            #     chunkText = chunk
+            #     for index in indeces:
+            #         imageUrl = await self.chunkUtils.UploadImageToBucket(
+            #             base64Str=images[index - 1],
+            #             extension="png",
+            #             folder="images",
+            #         )
+            #         token = f"<<image-{index}>>"
+            #         print(imageUrl)
+            #         chunkText = chunkText.replace(token, f"![Image]({imageUrl})")
+            #     processedChunk.append(chunkText)
 
         return processedChunk
 
@@ -598,67 +603,62 @@ class BuildRagService(BuildRagServiceImpl):
                     for claim in chunkInstance.claims
                     if claim.entityId == entity.id
                 ]
-                entityEmnbeddingResponse = await self.embedding.Embed(
-                    request=EmbeddingRequestModel(
-                        model="baai/bge-m3",
-                        texts=[entity.entityDescription],
-                        type="passage",
-                    )
-                )
+
                 allEntitys.append(
                     ChunkEntityNodeModel(
                         id=uuid4(),
+                        entity=entity.entity,
                         entityDescription=entity.entityDescription,
-                        entityEmbedding=cast(Any, entityEmnbeddingResponse)
-                        .data[0]
-                        .embedding,
                         relations=entityRelations,
                         claims=entityClaims,
                         chunkId=chunkId,
                         chunkIndex=index,
                     )
                 )
+            if index == 5:
+                break
             print(f"{index + 1} of {len(orginalChunks)}")
 
-        allEntitiesEmbeddings = [entity.entityEmbedding for entity in allEntitys]
-
-        for index, entityEmbedding in enumerate(allEntitiesEmbeddings):
-            print(f"Merging nodes {index + 1} of {len(allEntitiesEmbeddings)}")
-
-            allMergedNodes: FindTopKresultsFromVectorsResponseModel = (
-                self.embedding.FindTopKResultsFromVectors(
-                    request=FindTopKresultsFromVectorsRequestModel(
-                        topK=10,
-                        queryVector=entityEmbedding,
-                        sourceVectors=[
-                            e for e in allEntitiesEmbeddings if e != entityEmbedding
-                        ],
-                    )
+        allEntitiesBm25Documents: list[Document] = []
+        for index, entity in enumerate(allEntitys):
+            allEntitiesBm25Documents.append(
+                Document(
+                    page_content=entity.entity,
+                    metadata={"index": index},
                 )
             )
+        entitiesTexts = [d.page_content for d in allEntitiesBm25Documents]
+        entitiesTokenized = [t.split() for t in entitiesTexts]
+        print(entitiesTexts)
+        print(entitiesTokenized)
+        return 
+        bm25 = BM25Okapi(entitiesTokenized)
+
+        for index, entity in enumerate(allEntitys):
 
             nodeEntities: list[str] = []
             nodeRelations: list[str] = []
             nodeClaims: list[str] = []
+
             mergedNodeIndeces: list[int] = []
 
-            if (
-                allMergedNodes.distances is not None
-                and allMergedNodes.indeces is not None
-            ):
-                mergedNodeIndeces = [
-                    allMergedNodes.indeces[i]
-                    for i, d in enumerate(allMergedNodes.distances)
-                    if d < 0.5
-                ]
+            scores = cast(Any, bm25).get_scores(entity.entity.split())
+            ranked = sorted(
+                zip(allEntitiesBm25Documents, scores), key=lambda x: x[1], reverse=True
+            )
 
-                if len(mergedNodeIndeces) > 0:
+            for doc, score in ranked:
+                if score == 0.0:
+                    break
+                else:
 
-                    for nodeIndex in mergedNodeIndeces:
+                    docIndex: int = cast(Any, doc).metadata.get("index")
 
-                        nodeEntities.append(allEntitys[nodeIndex].entityDescription)
-                        nodeRelations = nodeRelations + allEntitys[nodeIndex].relations
-                        nodeClaims = nodeClaims + allEntitys[nodeIndex].claims
+                    if docIndex not in mergedNodeIndeces:
+                        mergedNodeIndeces.append(docIndex)
+                        nodeEntities.append(allEntitys[docIndex].entity)
+                        nodeRelations.extend(allEntitys[docIndex].relations)
+                        nodeClaims.extend(allEntitys[docIndex].claims)
 
             if len(nodeEntities) > 0:
 

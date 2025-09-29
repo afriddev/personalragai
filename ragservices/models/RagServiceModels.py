@@ -32,7 +32,7 @@ class ChunkInstanceModel(BaseModel):
 
 class ChunkEntityNodeModel(BaseModel):
     id: UUID = uuid4()
-    entityEmbedding: list[float]
+    entity:str
     entityDescription: str
     relations: list[str]
     claims: list[str]

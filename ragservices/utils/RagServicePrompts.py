@@ -39,7 +39,7 @@ Follow this schema exactly:
    - Distinct objects, people, organizations, or concepts mentioned.  
    - For each, provide:
      - id: unique integer starting from 1 (per chunk).
-     - entity: short name of the entity.
+     - entity: short name of the entity must be one word.
      - entityDescription: a concise description of the entity from context.
 
 2. **Relations**  
@@ -75,7 +75,7 @@ Rules:
 - If something is missing, return an empty array for that section.
 - Do not add extra fields or commentary.
 - **Do not miss any important information.**
-- **Extract the maximum number of entities, relations, and claims from the chunk.**
+- **Extract maximum number of entities, relations, and claims. more then 20-50 entities.**
 
 """
 
