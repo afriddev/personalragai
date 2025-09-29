@@ -503,6 +503,27 @@ class BuildRagService(BuildRagServiceImpl):
             chunkTexts.append(thisChunkText)
             chunkQuestions.extend(thisChunkQuestions)
 
+        finalChuks = [(str(chunk.id), chunk.text) for chunk in chunkTexts]
+
+        async with psqlDbClient.pool.acquire() as conn:
+            await conn.executemany(
+                "INSERT INTO chunks (id, text) VALUES ($1, $2)",
+                finalChuks,
+            )
+
+            await conn.executemany(
+                "INSERT INTO claims (id,  chunk_id, node_id,embedding) VALUES ($1, $2, $3, $4)",
+                [
+                    (
+                        str(claim.id),
+                        str(claim.chunkId),
+                        None,
+                        claim.embedding,
+                    )
+                    for claim in chunkQuestions
+                ],
+            )
+
     async def BuildQaRagFromCsv(self, file: str):
         qa = self.extractChunksFromDocService.ExtractQaChunkFromCsv(file=file)
 
@@ -668,28 +689,3 @@ class BuildRagService(BuildRagServiceImpl):
                 )
                 for entityIndex in mergedNodeIndeces:
                     allEntitys[entityIndex].nodeId = nodeId
-
-        # finalChuks = [(str(chunk.id), chunk.chunk) for chunk in allChunks]
-
-        # async with psqlDbClient.pool.acquire() as conn:
-        #     await conn.executemany(
-        #         "INSERT INTO chunks (id, text) VALUES ($1, $2)",
-        #         finalChuks,
-        #     )
-
-        #     await conn.executemany(
-        #         "INSERT INTO nodes (id, summary) VALUES ($1, $2)",
-        #         [(str(node.nodeId), node.nodeSummary) for node in allNodes],
-        #     )
-        #     await conn.executemany(
-        #         "INSERT INTO claims (id,  chunk_id, node_id,embedding) VALUES ($1, $2, $3, $4)",
-        #         [
-        #             (
-        #                 str(entity.id),
-        #                 str(entity.chunkId),
-        #                 str(entity.nodeId) if entity.nodeId else None,
-        #                 entity.entityEmbedding,
-        #             )
-        #             for entity in allEntitys
-        #         ],
-        #     )

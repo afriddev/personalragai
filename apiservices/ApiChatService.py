@@ -122,7 +122,7 @@ class ApiChatService(ApiChatImpl):
             elif request.useCode == False and request.useDeepResearch:
                 return OpenaiChatModelsEnum.SEED_OSS_32B_500K
             else:
-                return OpenaiChatModelsEnum.LLAMA_405B_110K
+                return OpenaiChatModelsEnum.LLAMA_235B_130K
 
         else:
             if request.useCode and request.useDeepResearch:
@@ -232,11 +232,9 @@ class ApiChatService(ApiChatImpl):
                     SELECT
                     c.id AS claim_id,
                     (c.embedding <-> $1) AS distance,
-                    ch.text   AS chunk_text,
-                    n.summary AS node_text
+                    ch.text   AS chunk_text
                     FROM claims c
                     LEFT JOIN chunks ch ON ch.id = c.chunk_id
-                    LEFT JOIN nodes  n  ON n.id  = c.node_id
                     ORDER BY c.embedding <-> $1
                     LIMIT LEAST(COALESCE($2::int, 10), 10);
 
@@ -246,26 +244,32 @@ class ApiChatService(ApiChatImpl):
             )
 
             for row in rows:
-                claim_id = row.get("claim_id")
-                node_text = row.get("node_text") or ""
-                docs.append(f"Claim: {claim_id}\nChunk: {node_text}\n")
+                chunk_text = row.get("chunk_text") or ""
+                docs.append(f"chunk: {chunk_text}")
 
         PROFESSIONAL_SYSTEM_PROMPT = f"""
-                Retrieved documents:\n\n" + "\n\n".join({docs})
-                You are given:
-                - A list `Retrieved  documents ` retrived from a knowledge base.
+            You are a professional AI assistant. Your job is to generate a **well-structured Markdown response** using the information provided.
 
-                Strict task (follow exactly):
-              
-                . If there is no answer in the retrieved docs, respond with:
-                "We don't have any information about that. do you want me to search through other sources for you ?"
+            Retrieved Chunks:
+            \n\n" + "\n\n".join({docs}) + "\n\n
 
+            ### Task Instructions:
+            - Use only the information from the retrieved chunks to answer.
+            - If the retrieved chunks do not contain the answer, respond exactly with:
+            > We don't have any information about that. Do you want me to search through other sources for you?
 
-                Formatting constraints:
-                - Output plain Markdown only. No raw HTML, no tables.
-                
+            ### Formatting Guidelines:
+            - Output in **plain Markdown only** (no HTML).
+            - Present information in a clear, concise, and professional tone.
+            - Use bullet points, numbered lists, or headings where appropriate.
+            - For links, use Markdown format: ![text](link).
+            - **Insert image links naturally at the point of relevance inside the explanation. Never group or place all images at the end of the answer.**
+            - Do not include unrelated images.
+            - Ensure the response is well-organized, professional, and easy to read.
+            - Example inline usage:  
+            "The Taj Mahal ![Taj Mahal](https://example.com/taj.jpg) is one of the most famous landmarks in India."
+            """
 
-                """
 
         userMessages: list[ChatMessageModel] = [
             ChatMessageModel(
