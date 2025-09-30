@@ -76,6 +76,8 @@ Rules:
 - Do not add extra fields or commentary.
 - **Do not miss any important information.**
 - **Extract maximum number of entities, relations, and claims. more then 20-50 entities.**
+- ** If entity is greater then one word, make it two words by adding space.**
+- ** Consider main words as entity like Eg: *Patient referral process* or *Healthcare provider* **
 
 """
 
@@ -224,7 +226,6 @@ MANDATORY RULES:
 """
 
 
-
 # PRE_PROCESS_USER__QUERY_PROMPT = """
 # You are a strict query pre-processor. Always return a JSON object only with two fields:
 #   {
@@ -255,7 +256,7 @@ MANDATORY RULES:
 #     - Do not include or repeat prior assistant messages verbatim unless you must set type to "PREVIOUS" per rule 4.
 #     - If type = PREVIOUS and the immediately prior assistant message invited confirmation/continuation, set "type" exactly to "PREVIOUS".
 #     - If type = PREVIOUS but there is no explicit immediate assistant prompt to continue/search, DO NOT guess — set type = SEARCH and normalize the user message into cleanquery.
-    
+
 # 11. If classification is ambiguous, prefer SEARCH (not HMIS).
 # 12. Validate output: ensure "type" is one of allowed enums. If your internal reasoning would produce any other value, output {"cleanquery":"<normalized text>","type":"SEARCH"} instead.
 # 13. Do not invent or use hidden context. Use only the provided conversation context.

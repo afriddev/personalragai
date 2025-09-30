@@ -630,8 +630,7 @@ class BuildRagService(BuildRagServiceImpl):
         entitiesTexts = [d.page_content for d in allEntitiesBm25Documents]
         entitiesTokenized = [t.split() for t in entitiesTexts]
         print(entitiesTexts)
-        print(entitiesTokenized)
-        return 
+
         bm25 = BM25Okapi(entitiesTokenized)
 
         for index, entity in enumerate(allEntitys):

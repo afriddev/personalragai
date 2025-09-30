@@ -2,82 +2,332 @@
 # print(a.split())
 
 
-from rank_bm25 import BM25Okapi
-from langchain_core.documents import Document
+# from rank_bm25 import BM25Okapi
+# from langchain_core.documents import Document
 
-docs = [
-    Document(page_content="NewRegistration", metadata={"index": 0}),
-    Document(page_content="PatientLookup", metadata={"index": 1}),
-    Document(page_content="DigitalInterface", metadata={"index": 2}),
-    Document(page_content="fo", metadata={"index": 3}),
-    Document(page_content="foo bar", metadata={"index": 4}),
+# docs = [
+#     Document(page_content="NewRegistration", metadata={"index": 0}),
+#     Document(page_content="PatientLookup", metadata={"index": 1}),
+#     Document(page_content="DigitalInterface", metadata={"index": 2}),
+#     Document(page_content="fo", metadata={"index": 3}),
+#     Document(page_content="foo bar", metadata={"index": 4}),
+# ]
+
+# texts = [d.page_content for d in docs]
+# tokenized = [t.split() for t in texts]
+# print(tokenized)
+# bm25 = BM25Okapi(tokenized)
+
+# query = "bar".split()
+# scores = bm25.get_scores(query)
+
+# # print documents ordered by score desc with score
+# ranked = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
+# for doc, score in ranked:
+#     if score != 0.0:
+#         print(f"{doc} => {score}")
+
+
+from clientservices.services import Embedding
+from clientservices.models import (
+    EmbeddingRequestModel,
+    FindTopKresultsFromVectorsRequestModel,
+    EmbeddingResponseModel,
+)
+import asyncio
+
+a = Embedding()
+texts = [
+    "Outpatient Department",
+    "OPD module",
+    "HMIS website",
+    "Patient Registration",
+    "Consultation Records",
+    "Laboratory Integration",
+    "Diagnostic Integration",
+    "Laboratories",
+    "Inventory Integration",
+    "Pharmacy",
+    "Reporting",
+    "Analytics",
+    "OPD Doctor Desk",
+    "Doctor desk",
+    "Service Ordering",
+    "Surgeries",
+    "Procedures",
+    "Referral",
+    "Healthcare facilities",
+    "Demographic information",
+    "Medical history",
+    "Prescribed treatments",
+    "Test results",
+    "Stock details",
+    "Indent",
+    "Administrative tasks",
+    "Clinical tasks",
+    "Service delivery",
+    "Patient care",
+    "Data entry",
+    "Paper records",
+    "Wait times",
+    "Patient satisfaction",
+    "Communication",
+    "OPD Desk lite",
+    "Doctors",
+    "Patients",
+    "Health Management Information System",
+    "Digital module",
+    "User interface",
+    "Workstation",
+    "System integration",
+    "Clinical decisions",
+    "Service requests",
+    "Drug ordering",
+    "Data analysis",
+    "Efficiency improvement",
+    "Error reduction",
+    "Seamless experience",
+    "Timely services",
+    "outpatient services",
+    "healthcare providers",
+    "patients",
+    "Total Registered Patients",
+    "Attended Patients",
+    "Responsive View Button",
+    "browser tab",
+    "OPD desk",
+    "Dept Unit Dropdown",
+    "Departments",
+    "Units",
+    "administrator",
+    "Hospital Administration",
+    "doctors",
+    "access permissions",
+    "Teleconsultation Registrants",
+    "teleconsultation",
+    "consultation requests",
+    "approval",
+    "registration stamp",
+    "Referral Patients",
+    "referral",
+    "acceptance",
+    "search function",
+    "real time data",
+    "UI element",
+    "parallel management",
+    "full page view",
+    "mobile browsers",
+    "PC",
+    "list",
+    "current date",
+    "alphabetical order",
+    "default selection",
+    "digital interface",
+    "patient list",
+    "consultation management",
+    "remote access",
+    "data visibility",
+    "user interaction",
+    "system access",
+    "workflow efficiency",
+    "patient experience",
+    "doctor experience",
+    "interface design",
+    "approval mechanism",
+    "data update",
+    "access control",
+    "department switching",
+    "patient attendance",
+    "patients",
+    "doctors",
+    "CR number",
+    "UMID card number",
+    "mobile app",
+    "consultation requests",
+    "department",
+    "unit",
+    "appointment",
+    "Date of Patient Registration",
+    "Revisit",
+    "current day",
+    "previous day",
+    "OPD Desk",
+    "registration counter",
+    "new registrations",
+    "hospital",
+    "emergency visits",
+    "OPD roster timings",
+    "Refresh OPD List Button",
+    "OPD list",
+    "registration",
+    "prescriptions",
+    "search function",
+    "patient demographics",
+    "UMID",
+    "PAN",
+    "mobile number",
+    "Emp No.",
+    "PPO No.",
+    "digital application",
+    "interface",
+    "user interface element",
+    "system",
+    "data",
+    "medical consultation",
+    "treatment",
+    "evaluation",
+    "identification",
+    "unique identifier",
+    "stamp",
+    "window",
+    "list",
+    "screen",
+    "button",
+    "approval",
+    "function",
+    "process",
+    "option",
+    "visit",
+    "doctor",
+    "patient",
+    "OPD Desk",
+    "Refresh OPD Desk button",
+    "Patient List View",
+    "Queue Number",
+    "Status",
+    "Waiting",
+    "Attended",
+    "Skipped",
+    "Name",
+    "CR Number",
+    "Gender",
+    "Age",
+    "Category of Patient",
+    "Mobile Number",
+    "Department",
+    "Unit",
+    "icon",
+    "paediatric",
+    "sort",
+    "column header",
+    "up arrow icon",
+    "down arrow icon",
+    "Search",
+    "queue",
+    "doctor",
+    "patients",
+    "department list",
+    "queue number",
+    "name",
+    "CR number",
+    "umid number",
+    "Rx Button",
+    "prescription page",
+    "vital signs",
+    "complaints",
+    "diagnosis",
+    "investigations",
+    "services",
+    "drugs",
+    "procedures",
+    "prescription",
+    "Vitals Button",
+    "dedicated screen",
+    "OPD Nursing desk",
+    "nursing staff",
+    "queue display system",
+    "Skip Button",
+    "waiting",
+    "skipped",
+    "appointment",
+    "medical attention",
+    "Print button",
+    "completed prescription",
+    "preview",
+    "hard copy",
+    "doctor",
+    "prescription",
+    "Print button",
+    "preview screen",
+    "patient list",
+    "OPD Doctor Desk",
+    "Legend",
+    "footer",
+    "visit types",
+    "patient status",
+    "pagination",
+    "page numbers",
+    "previous button",
+    "next button",
+    "patient count",
+    "Rx Page",
+    "Doctor’s Workbench",
+    "treatment",
+    "examination",
+    "tabs",
+    "Macro",
+    "Predefined Text",
+    "pop-up window",
+    "Add button",
+    "Clear Text Box",
+    "X button",
+    "Speech to Text",
+    "text box",
+    "cursor",
+    "browser compatibility",
+    "Resize Text Box",
+    "drag",
+    "user interface",
+    "image 6",
+    "image 7",
+    "image 8",
+    "system feature",
+    "navigation",
+    "data display",
+    "text entry",
+    "OPD",
+    "hard copy",
+    "comprehensive overview",
+    "status classification",
+    "direct navigation",
+    "total entries",
+    "current page",
+    "treatment parameters",
+    "common options",
+    "pop-up",
 ]
 
-texts = [d.page_content for d in docs]
-tokenized = [t.split() for t in texts]
-bm25 = BM25Okapi(tokenized)
+query = "OPD"
+async def pro():
+    embeddings: EmbeddingResponseModel = await a.Embed(
+        request=EmbeddingRequestModel(
+            model="baai/bge-m3",
+            texts=texts*25,
+            type="passage",
+        )
+    )
 
-query = "Regist".split()
-scores = bm25.get_scores(query)
+    embedding1: EmbeddingResponseModel = await a.Embed(
+        request=EmbeddingRequestModel(
+            model="baai/bge-m3",
+            texts=[
+                query
+            ],
+            type="query",
+        )
+    )
 
-# print documents ordered by score desc with score
-ranked = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
-for doc, score in ranked:
-    if score != 0.0:
-        print(f"{doc} => {score}")
-
-
-
-
-# from clientservices.services import Embedding
-# from clientservices.models import (
-#     EmbeddingRequestModel,
-#     FindTopKresultsFromVectorsRequestModel,
-#     EmbeddingResponseModel,
-# )
-# import asyncio
-
-# a = Embedding()
-
-
-# async def pro():
-#     embeddings: EmbeddingResponseModel = await a.Embed(
-#         request=EmbeddingRequestModel(
-#             model="baai/bge-m3",
-#             texts=[
-#                 "OPD is a healthcare organization providing outpatient services through a network of clinics, focusing on affordable care, preventive health, and diagnostics.",
-#                 "OPD operates multi-city clinics offering outpatient treatments, wellness programs, and patient-centered medical care.",
-#                 "OPD delivers accessible healthcare by combining experienced doctors, advanced diagnostic technology, and partnerships with insurance providers.",
-#                 "OPD specializes in outpatient healthcare, emphasizing preventive medicine, chronic disease management, and affordable solutions for patients.",
-#                 "OPD is a trusted healthcare provider offering outpatient consultatizns, diagnostics, and wellness initiatives across several cities.",
-#                 "OPD runs clinics that provide outpatient services, preventive screenings, and community health programs for improved population wellbeing.",
-#                 "OPD combines technology-driven diagnostics with experienced medical staff to deliver affordable outpatient healthcare.",
-#                 "OPD is recognized for its outpatient services, preventive care, and collaboration with insurers to ensure broader patient coverage.",
-#                 "OPD focuses on community health by offering outpatient consultations, affordable diagnostics, and wellness-oriented medical programs.",
-#             ],
-#             type="passage",
-#         )
-#     )
-
-#     embedding1: EmbeddingResponseModel = await a.Embed(
-#         request=EmbeddingRequestModel(
-#             model="baai/bge-m3",
-#             texts=[
-#                 "OPD manages a network of clinics delivering quality healthcare solutions, preventive programs, and modern diagnostic treatments.",
-#             ],
-#             type="query",
-#         )
-#     )
-
-#     rerank = a.FindTopKResultsFromVectors(
-#         request=FindTopKresultsFromVectorsRequestModel(
-#             topK=9,
-#             queryVector=embedding1.data[0].embedding,
-#             sourceVectors=[data.embedding for data in embeddings.data],
-#         )
-#     )
-#     print(rerank.indeces)
-#     print(rerank.distances)
+    rerank = a.FindTopKResultsFromVectors(
+        request=FindTopKresultsFromVectorsRequestModel(
+            topK=50,
+            queryVector=embedding1.data[0].embedding,
+            sourceVectors=[data.embedding for data in embeddings.data],
+        )
+    )
+    for j,i in enumerate(rerank.indeces):
+        if(rerank.distances[j]<0.4):
+            print(f"{query} -> {texts[i]}")
+    print(rerank.distances)
 
 
-# asyncio.run(pro())
+asyncio.run(pro())
