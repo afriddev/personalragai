@@ -1,9 +1,24 @@
+from typing import Any, cast
+import json
+from uuid import uuid4, UUID
+from database import psqlDbClient
+from rank_bm25 import BM25Okapi
+from langchain_core.documents import Document
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+
+from clientservices.services import Chat, Embedding
+from clientservices.models import (
+    ChatRequestModel,
+    ChatMessageModel,
+    EmbeddingRequestModel,
+)
+from clientservices.enums import CerebrasChatModelEnum, ChatMessageRoleEnum
 from ragservices.implementations import (
     ExtractInstancesFromChunkServiceImpl,
     ExtractChunksFromDocServiceImpl,
     BuildRagServiceImpl,
 )
-from clientservices.services import Chat, Embedding
 from ragservices.models import (
     ChunkInstanceDataModel,
     ChunkInstanceRelationModel,
@@ -21,34 +36,23 @@ from ragservices.models import (
     LightRagResponseModel,
 )
 from ragservices.services.RagUtils import ChunkUtils, DocUtils, YoutubeUtils
-from clientservices.models import (
-    ChatRequestModel,
-    ChatMessageModel,
-    EmbeddingRequestModel,
-)
-from clientservices.enums import CerebrasChatModelEnum, ChatMessageRoleEnum
+from ragservices.enums import RagServiceResponseEnum
 from ragservices.utils import (
     EXTARCT_INSTANCE_FROM_CHUNK_PROMPT,
     EXTRACT_QUESTIONS_FROM_CHUNK_PROMPT,
     CLEAN_YT_CHUNK_PROMPT,
 )
-from typing import Any, cast
-import json
-from uuid import uuid4, UUID
-from database import psqlDbClient
-from rank_bm25 import BM25Okapi
-from langchain_core.documents import Document
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
 
-from ragservices.enums import RagServiceResponseEnum
+
+
+
+
 
 cerebrasChat = Chat()
 chunkUtils = ChunkUtils()
 docUtils = DocUtils()
 youtubeUtils = YoutubeUtils()
 embeddingService = Embedding()
-
 
 class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
