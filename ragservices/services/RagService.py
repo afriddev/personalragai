@@ -1,4 +1,3 @@
-import re
 from ragservices.implementations import (
     ExtractInstancesFromChunkServiceImpl,
     ExtractChunksFromDocServiceImpl,
@@ -6,40 +5,43 @@ from ragservices.implementations import (
 )
 from clientservices.services import Chat, Embedding
 from ragservices.models import (
-    ChunkInstanceModel,
-    ChunkRelationModel,
-    ChunkEntityModel,
-    ChunkClaimModel,
+    ChunkInstanceDataModel,
+    ChunkInstanceRelationModel,
+    ChunkInstanceEntityModel,
+    ChunkInstanceClaimModel,
     AllQaResponseModel,
-    ChunkEntityNodeModel,
-    ChunkNodeModel,
-    ChunkModel,
-    ExtractQuestionsFromChunkResponseModel,
-    QaRagQuestionModel,
-    QaRagChunkTextsModel,
+    ExtractQaFromChunkResponseModel,
+    QaRagAllQuestionsModel,
+    QaRagAllChunksModel,
+    AllRelationsModel,
+    AllChunksModel,
+    AllClaimsModel,
+    AllEntitiesModel,
+    ExtractChunkInstanceResponseModel,
+    LightRagResponseModel,
 )
 from ragservices.services.RagUtils import ChunkUtils, DocUtils, YoutubeUtils
 from clientservices.models import (
     ChatRequestModel,
     ChatMessageModel,
     EmbeddingRequestModel,
-    FindTopKresultsFromVectorsRequestModel,
-    FindTopKresultsFromVectorsResponseModel,
 )
 from clientservices.enums import CerebrasChatModelEnum, ChatMessageRoleEnum
 from ragservices.utils import (
     EXTARCT_INSTANCE_FROM_CHUNK_PROMPT,
-    EXTRACT_NODE_SUMMARY_PROMPT,
     EXTRACT_QUESTIONS_FROM_CHUNK_PROMPT,
     CLEAN_YT_CHUNK_PROMPT,
 )
 from typing import Any, cast
 import json
-from uuid import uuid4
+from uuid import uuid4, UUID
 from database import psqlDbClient
 from rank_bm25 import BM25Okapi
 from langchain_core.documents import Document
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
+from ragservices.enums import RagServiceResponseEnum
 
 cerebrasChat = Chat()
 chunkUtils = ChunkUtils()
@@ -55,9 +57,11 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
     async def ExtractInstancesFromChunk(
         self, chunk: str, messages: list[ChatMessageModel], retryLimit: int
-    ) -> ChunkInstanceModel:
+    ) -> ExtractChunkInstanceResponseModel:
         if retryLimit > self.retryLimit:
-            raise Exception("Exception while extracting questions from chunk")
+            return ExtractChunkInstanceResponseModel(
+                data=None, status=RagServiceResponseEnum.SERVER_ERROR
+            )
 
         cerebrasChatResponse: Any = await cerebrasChat.Chat(
             modelParams=ChatRequestModel(
@@ -153,7 +157,7 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
             )
 
         chunkEntities = [
-            ChunkEntityModel(
+            ChunkInstanceEntityModel(
                 id=entity.get("id"),
                 entity=entity.get("entity"),
                 entityDescription=entity.get("entity")
@@ -163,7 +167,7 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
             for entity in chatResponse.get("entities", [])
         ]
         chunkRelations = [
-            ChunkRelationModel(
+            ChunkInstanceRelationModel(
                 id=relation.get("id"),
                 sourceEntityId=relation.get("sourceEntityId"),
                 targetEntityId=relation.get("targetEntityId"),
@@ -173,7 +177,7 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
             for relation in chatResponse.get("relations", [])
         ]
         chunkClaims = [
-            ChunkClaimModel(
+            ChunkInstanceClaimModel(
                 id=claim.get("id"),
                 entityId=claim.get("entityId"),
                 claim=claim.get("claim"),
@@ -182,13 +186,16 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
             for claim in chatResponse.get("claims", [])
         ]
 
-        response = ChunkInstanceModel(
+        response = ChunkInstanceDataModel(
             entities=chunkEntities,
             relations=chunkRelations,
             claims=chunkClaims,
             chunk=cast(str, chatResponse.get("chunk", chunk)),
         )
-        return response
+
+        return ExtractChunkInstanceResponseModel(
+            data=response, status=RagServiceResponseEnum.SUCCESS
+        )
 
     async def ExtractNodeSummary(
         self,
@@ -201,9 +208,9 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
         cerebrasChatResponse: Any = await cerebrasChat.Chat(
             modelParams=ChatRequestModel(
                 topP=0.9,
-                temperature=0.1,
-                maxCompletionTokens=3000,
-                model=CerebrasChatModelEnum.LLAMA_70B,
+                temperature=0.3,
+                maxCompletionTokens=6000,
+                model=CerebrasChatModelEnum.QWEN_235B,
                 messages=messages,
                 responseFormat={
                     "type": "object",
@@ -239,7 +246,7 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
         self,
         messages: list[ChatMessageModel],
         retryLimit: int,
-    ) -> ExtractQuestionsFromChunkResponseModel:
+    ) -> ExtractQaFromChunkResponseModel:
         if retryLimit > self.retryLimit:
             raise Exception("Exception while extracting questions from chunk")
 
@@ -279,12 +286,12 @@ class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
             await self.ExtractNodeSummary(messages=messages, retryLimit=retryLimit + 1)
 
-        return ExtractQuestionsFromChunkResponseModel(
+        return ExtractQaFromChunkResponseModel(
             chunk=chatResponse.get("chunk", ""),
             questions=chatResponse.get("questions", []),
         )
 
-    async def CleanYoutubeChunks(
+    async def CleanYoutubeChunk(
         self,
         messages: list[ChatMessageModel],
         retryLimit: int,
@@ -383,30 +390,28 @@ class BuildRagService(BuildRagServiceImpl):
         self.extractInstanceFromChunkService = ExtractInstanceFromChunkService()
         self.embedding = embeddingService
 
-    async def BuildQaRagFromYtVideo(self, videoId: str):
+    async def ExtractQaRagInstancesFromYtVideo(self, videoId: str):
 
         chunks = self.extractChunksFromDocService.ExtractChunksFromYtVideo(
             chunkSec=400, videoId=videoId
         )
 
-        chunkTexts: list[QaRagChunkTextsModel] = []
-        chunkQuestions: list[QaRagQuestionModel] = []
+        chunkTexts: list[QaRagAllChunksModel] = []
+        chunkQuestions: list[QaRagAllQuestionsModel] = []
 
         for chunk in chunks:
-            cleanedChunk = (
-                await self.extractInstanceFromChunkService.CleanYoutubeChunks(
-                    retryLimit=0,
-                    messages=[
-                        ChatMessageModel(
-                            role=ChatMessageRoleEnum.SYSTEM,
-                            content=CLEAN_YT_CHUNK_PROMPT,
-                        ),
-                        ChatMessageModel(
-                            role=ChatMessageRoleEnum.USER,
-                            content=chunk,
-                        ),
-                    ],
-                )
+            cleanedChunk = await self.extractInstanceFromChunkService.CleanYoutubeChunk(
+                retryLimit=0,
+                messages=[
+                    ChatMessageModel(
+                        role=ChatMessageRoleEnum.SYSTEM,
+                        content=CLEAN_YT_CHUNK_PROMPT,
+                    ),
+                    ChatMessageModel(
+                        role=ChatMessageRoleEnum.USER,
+                        content=chunk,
+                    ),
+                ],
             )
             messages: list[ChatMessageModel] = [
                 ChatMessageModel(
@@ -428,12 +433,12 @@ class BuildRagService(BuildRagServiceImpl):
 
             chunkId = uuid4()
 
-            thisChunkText = QaRagChunkTextsModel(
+            thisChunkText = QaRagAllChunksModel(
                 id=chunkId, text=chunkGraphRagInfo.chunk
             )
 
             thisChunkQuestions = [
-                QaRagQuestionModel(id=uuid4(), chunkId=chunkId, text=question)
+                QaRagAllQuestionsModel(id=uuid4(), chunkId=chunkId, text=question)
                 for question in chunkGraphRagInfo.questions
             ]
 
@@ -458,10 +463,10 @@ class BuildRagService(BuildRagServiceImpl):
             chunkTexts.append(thisChunkText)
             chunkQuestions.extend(thisChunkQuestions)
 
-    async def BuildQaRagFromPdf(self, file: str):
+    async def ExtractQaRagInstancesFromPdf(self, file: str):
         chunks = await self.extractChunksFromDocService.ExtractChunksFromPdf(file=file)
-        chunkTexts: list[QaRagChunkTextsModel] = []
-        chunkQuestions: list[QaRagQuestionModel] = []
+        chunkTexts: list[QaRagAllChunksModel] = []
+        chunkQuestions: list[QaRagAllQuestionsModel] = []
 
         for chunk in chunks:
             messages: list[ChatMessageModel] = [
@@ -478,11 +483,11 @@ class BuildRagService(BuildRagServiceImpl):
                 )
             )
             chunkId = uuid4()
-            thisChunkText = QaRagChunkTextsModel(
+            thisChunkText = QaRagAllChunksModel(
                 id=chunkId, text=chunkGraphRagInfo.chunk
             )
             thisChunkQuestions = [
-                QaRagQuestionModel(id=uuid4(), chunkId=chunkId, text=rel)
+                QaRagAllQuestionsModel(id=uuid4(), chunkId=chunkId, text=rel)
                 for rel in chunkGraphRagInfo.questions
             ]
 
@@ -529,11 +534,11 @@ class BuildRagService(BuildRagServiceImpl):
                 ],
             )
 
-    async def BuildQaRagFromCsv(self, file: str):
+    async def ExtractQaRagInstancesFromCsv(self, file: str):
         qa = self.extractChunksFromDocService.ExtractQaChunkFromCsv(file=file)
 
-        chunks: list[QaRagChunkTextsModel] = []
-        questions: list[QaRagQuestionModel] = []
+        chunks: list[QaRagAllChunksModel] = []
+        questions: list[QaRagAllQuestionsModel] = []
         qaBatchSize = 10
 
         for index in range(0, len(qa.questions), qaBatchSize):
@@ -550,10 +555,10 @@ class BuildRagService(BuildRagServiceImpl):
                     chunkId = uuid4()
 
                     chunks.append(
-                        QaRagChunkTextsModel(id=chunkId, text=qa.answers[index + idx])
+                        QaRagAllChunksModel(id=chunkId, text=qa.answers[index + idx])
                     )
                     questions.append(
-                        QaRagQuestionModel(
+                        QaRagAllQuestionsModel(
                             id=uuid4(),
                             chunkId=chunkId,
                             embedding=q.embedding,
@@ -561,89 +566,118 @@ class BuildRagService(BuildRagServiceImpl):
                         )
                     )
 
-    async def BuildGraphRagFromPdf(self, file: str):
+    async def ExtractLightRagFromPdf(self, file: str):
         orginalChunks = await self.extractChunksFromDocService.ExtractChunksFromPdf(
             file
         )
-        allEntitys: list[ChunkEntityNodeModel] = []
-        allNodes: list[ChunkNodeModel] = []
-        allChunks: list[ChunkModel] = []
-        for index, chunk in enumerate(orginalChunks):
 
-            chunkInstance: ChunkInstanceModel = (
-                await self.extractInstanceFromChunkService.ExtractInstancesFromChunk(
-                    chunk=chunk,
-                    messages=[
-                        ChatMessageModel(
-                            role=ChatMessageRoleEnum.SYSTEM,
-                            content=EXTARCT_INSTANCE_FROM_CHUNK_PROMPT,
-                        ),
-                        ChatMessageModel(
-                            role=ChatMessageRoleEnum.USER,
-                            content=f"""
+        allChunks: list[AllChunksModel] = []
+        allClaims: list[AllClaimsModel] = []
+        allEntities: list[AllEntitiesModel] = []
+        allRelations: list[AllRelationsModel] = []
+        matchedNodeIds: list[list[UUID]] = []
+
+        # Extracting Entities, Relations and Claims from Chunks
+        for index, chunk in enumerate(orginalChunks):
+            # Extracting chunk instances
+            chunkResponse = await self.extractInstanceFromChunkService.ExtractInstancesFromChunk(
+                chunk=chunk,
+                messages=[
+                    ChatMessageModel(
+                        role=ChatMessageRoleEnum.SYSTEM,
+                        content=EXTARCT_INSTANCE_FROM_CHUNK_PROMPT,
+                    ),
+                    ChatMessageModel(
+                        role=ChatMessageRoleEnum.USER,
+                        content=f"""
                                 {chunk}
                             """,
-                        ),
-                    ],
-                    retryLimit=0,
-                )
+                    ),
+                ],
+                retryLimit=0,
             )
-            chunkId = uuid4()
-            allChunks.append(ChunkModel(id=chunkId, chunk=chunkInstance.chunk))
 
+            if (
+                chunkResponse.status != RagServiceResponseEnum.SUCCESS
+                or chunkResponse.data is None
+            ):
+                continue
+
+            chunkInstance: ChunkInstanceDataModel = chunkResponse.data
+
+            # Storing the extracted instances
+            tempChunkId = uuid4()
+            allChunks.append(AllChunksModel(id=tempChunkId, text=chunkInstance.chunk))
+            tempDictEntityIdToUuid: dict[int, UUID] = {}
+            # Storing Entities, Relations and Claims
             for entity in chunkInstance.entities:
-                entityRelations = [
-                    relation.relation
-                    for relation in chunkInstance.relations
-                    if relation.sourceEntityId == entity.id
-                    or relation.targetEntityId == entity.id
-                ]
-                entityClaims = [
-                    claim.claim
-                    for claim in chunkInstance.claims
-                    if claim.entityId == entity.id
-                ]
-
-                allEntitys.append(
-                    ChunkEntityNodeModel(
-                        id=uuid4(),
+                tempEntityId = uuid4()
+                tempDictEntityIdToUuid[entity.id] = tempEntityId
+                allEntities.append(
+                    AllEntitiesModel(
+                        chunkId=tempChunkId,
+                        id=tempEntityId,
                         entity=entity.entity,
                         entityDescription=entity.entityDescription,
-                        relations=entityRelations,
-                        claims=entityClaims,
-                        chunkId=chunkId,
-                        chunkIndex=index,
                     )
                 )
+
+            for relation in chunkInstance.relations:
+                allRelations.extend(
+                    [
+                        AllRelationsModel(
+                            id=uuid4(),
+                            relation=relation.relation,
+                            relationDescription=relation.relationDescription,
+                            sourceEntityId=tempDictEntityIdToUuid.get(
+                                relation.sourceEntityId, None
+                            ),
+                            targetEntityId=tempDictEntityIdToUuid.get(
+                                relation.targetEntityId, None
+                            ),
+                        )
+                    ]
+                )
+
+            for claim in chunkInstance.claims:
+                allClaims.extend(
+                    [
+                        AllClaimsModel(
+                            id=uuid4(),
+                            entityId=tempDictEntityIdToUuid.get(claim.entityId, None),
+                            claimDescription=claim.claimDescription,
+                        )
+                    ]
+                )
+
             if index == 5:
                 break
+
             print(f"{index + 1} of {len(orginalChunks)}")
 
-        allEntitiesBm25Documents: list[Document] = []
-        for index, entity in enumerate(allEntitys):
-            allEntitiesBm25Documents.append(
+        # Indexing Entities using BM25
+        tempEntitiesBm25Docs: list[Document] = []
+        for index, entity in enumerate(allEntities):
+            tempEntitiesBm25Docs.append(
                 Document(
                     page_content=entity.entity,
                     metadata={"index": index},
                 )
             )
-        entitiesTexts = [d.page_content for d in allEntitiesBm25Documents]
+        entitiesTexts = [d.page_content for d in tempEntitiesBm25Docs]
         entitiesTokenized = [t.split() for t in entitiesTexts]
-        print(entitiesTexts)
-
         bm25 = BM25Okapi(entitiesTokenized)
 
-        for index, entity in enumerate(allEntitys):
+        # Merging Entities using BM25
+        tempEntities = allEntities.copy()
+        for index, entity in enumerate(tempEntities):
 
-            nodeEntities: list[str] = []
-            nodeRelations: list[str] = []
-            nodeClaims: list[str] = []
-
+            matchedNodes: list[UUID] = []
             mergedNodeIndeces: list[int] = []
 
             scores = cast(Any, bm25).get_scores(entity.entity.split())
             ranked = sorted(
-                zip(allEntitiesBm25Documents, scores), key=lambda x: x[1], reverse=True
+                zip(tempEntitiesBm25Docs, scores), key=lambda x: x[1], reverse=True
             )
 
             for doc, score in ranked:
@@ -655,36 +689,61 @@ class BuildRagService(BuildRagServiceImpl):
 
                     if docIndex not in mergedNodeIndeces:
                         mergedNodeIndeces.append(docIndex)
-                        nodeEntities.append(allEntitys[docIndex].entity)
-                        nodeRelations.extend(allEntitys[docIndex].relations)
-                        nodeClaims.extend(allEntitys[docIndex].claims)
+                        matchedNodes.append(tempEntities[docIndex].id)  # type: ignore
 
-            if len(nodeEntities) > 0:
-
-                summary = await self.extractInstanceFromChunkService.ExtractNodeSummary(
-                    retryLimit=0,
-                    messages=[
-                        ChatMessageModel(
-                            role=ChatMessageRoleEnum.SYSTEM,
-                            content=EXTRACT_NODE_SUMMARY_PROMPT,
-                        ),
-                        ChatMessageModel(
-                            role=ChatMessageRoleEnum.USER,
-                            content=f"""
-                                Entity Descriptions: {nodeEntities}
-                                Relations: {nodeRelations}
-                                Claims: {nodeClaims}
-                                Please generate a concise summary for the node.
-                            """,
-                        ),
-                    ],
-                )
-                nodeId = uuid4()
-                allNodes.append(
-                    ChunkNodeModel(
-                        nodeId=nodeId,
-                        nodeSummary=summary,
+            # Removeing the merged nodes from tempEntities
+            mergedNodeIndeces = sorted(set(mergedNodeIndeces), reverse=True)
+            for docIndex in mergedNodeIndeces:
+                if 0 <= docIndex < len(tempEntities):
+                    tempEntities.pop(docIndex)
+            # Recreating the BM25 index
+            tempDoc: list[Document] = []
+            for index, entity in enumerate(tempEntities):
+                tempDoc.append(
+                    Document(
+                        page_content=entity.entity,
+                        metadata={"index": index},
                     )
                 )
-                for entityIndex in mergedNodeIndeces:
-                    allEntitys[entityIndex].nodeId = nodeId
+            tempTexts = [d.page_content for d in tempDoc]
+            tempTokens = [t.split() for t in tempTexts]
+            tempEntitiesBm25Docs = tempDoc
+            bm25 = BM25Okapi(tempTokens)
+
+            # Storing the matched node ids for each entity
+            if len(matchedNodes) > 0:
+                matchedNodeIds.append(matchedNodes)
+
+            print(f"Node {index + 1} of {len(allEntities)}")
+
+        return JSONResponse(
+            content=jsonable_encoder(
+                {
+                    "chunks": allChunks,
+                    "entities": allEntities,
+                    "relations": allRelations,
+                    "claims": allClaims,
+                    "matchedNodeIds": matchedNodeIds,
+                }
+            )
+        )
+
+
+# summary = await self.extractInstanceFromChunkService.ExtractNodeSummary(
+#     retryLimit=0,
+#     messages=[
+#         ChatMessageModel(
+#             role=ChatMessageRoleEnum.SYSTEM,
+#             content=EXTRACT_NODE_SUMMARY_PROMPT,
+#         ),
+#         ChatMessageModel(
+#             role=ChatMessageRoleEnum.USER,
+#             content=f"""
+#                 Entity Descriptions: {nodeEntities}
+#                 Relations: {nodeRelations}
+#                 Claims: {nodeClaims}
+#                 Please generate a long  summary for the node.
+#             """,
+#         ),
+#     ],
+# )

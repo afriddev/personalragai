@@ -78,7 +78,8 @@ Rules:
 - **Extract maximum number of entities, relations, and claims. more then 20-50 entities.**
 - ** If entity is greater then one word, make it two words by adding space.**
 - ** Consider main words as entity like Eg: *Patient referral process* or *Healthcare provider* **
-
+- **Dont treat tokens as enity like image-1 or <<IMAGE-N> **
+- **Dont duplicate entities. If entity already exists, skip it.**
 """
 
 

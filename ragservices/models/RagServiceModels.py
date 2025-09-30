@@ -1,14 +1,15 @@
 from pydantic import BaseModel
-from uuid import UUID, uuid4
+from uuid import UUID
+from ragservices.enums import RagServiceResponseEnum
 
 
-class ChunkEntityModel(BaseModel):
+class ChunkInstanceEntityModel(BaseModel):
     id: int
     entity: str
     entityDescription: str
 
 
-class ChunkRelationModel(BaseModel):
+class ChunkInstanceRelationModel(BaseModel):
     id: int
     sourceEntityId: int
     targetEntityId: int
@@ -16,57 +17,72 @@ class ChunkRelationModel(BaseModel):
     relationDescription: str
 
 
-class ChunkClaimModel(BaseModel):
+class ChunkInstanceClaimModel(BaseModel):
     id: int
     entityId: int
     claim: str
     claimDescription: str
 
 
-class ChunkInstanceModel(BaseModel):
-    entities: list[ChunkEntityModel]
-    relations: list[ChunkRelationModel]
-    claims: list[ChunkClaimModel]
+class ChunkInstanceDataModel(BaseModel):
+    entities: list[ChunkInstanceEntityModel]
+    relations: list[ChunkInstanceRelationModel]
+    claims: list[ChunkInstanceClaimModel]
     chunk: str
 
 
-class ChunkEntityNodeModel(BaseModel):
-    id: UUID = uuid4()
-    entity:str
-    entityDescription: str
-    relations: list[str]
-    claims: list[str]
-    chunkId: UUID
-    nodeId: UUID | None = None
-    chunkIndex: int
+class ExtractChunkInstanceResponseModel(BaseModel):
+    status: RagServiceResponseEnum = RagServiceResponseEnum.SUCCESS
+    data: ChunkInstanceDataModel | None = None
 
 
-class ChunkModel(BaseModel):
-    chunk: str
+class QaRagAllChunksModel(BaseModel):
     id: UUID
+    text: str
+    embedding: list[float] | None = None
 
 
-class ChunkNodeModel(BaseModel):
-    nodeId: UUID
-    nodeSummary: str
+class QaRagAllQuestionsModel(BaseModel):
+    id: UUID
+    chunkId: UUID
+    text: str
+    embedding: list[float] | None = None
 
 
-
-class ExtractQuestionsFromChunkResponseModel(BaseModel):
+class ExtractQaFromChunkResponseModel(BaseModel):
     questions: list[str]
     chunk: str
 
 
-
-
-class QaRagChunkTextsModel(BaseModel):
+class AllChunksModel(BaseModel):
     id: UUID
     text: str
-    embedding: list[float] | None = None
 
 
-class QaRagQuestionModel(BaseModel):
+class AllEntitiesModel(BaseModel):
     id: UUID
     chunkId: UUID
-    text: str
-    embedding: list[float] | None = None
+    entity: str
+    entityDescription: str
+
+
+class AllRelationsModel(BaseModel):
+    id: UUID
+    sourceEntityId: UUID | None = None
+    targetEntityId: UUID | None = None
+    relation: str
+    relationDescription: str
+
+
+class AllClaimsModel(BaseModel):
+    id: UUID
+    entityId: UUID | None = None
+    claimDescription: str
+
+
+class LightRagResponseModel(BaseModel):
+    entities: list[AllEntitiesModel]
+    relations: list[AllRelationsModel]
+    claims: list[AllClaimsModel]
+    chunks: list[AllChunksModel]
+    matchedNodeIds: list[list[UUID]]

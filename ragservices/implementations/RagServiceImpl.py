@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from ragservices.models import (
-    ChunkInstanceModel,
+    ExtractChunkInstanceResponseModel,
     AllQaResponseModel,
-    ExtractQuestionsFromChunkResponseModel,
+    ExtractQaFromChunkResponseModel,
 )
 from clientservices.models import ChatMessageModel
 
@@ -12,7 +12,7 @@ class ExtractInstancesFromChunkServiceImpl(ABC):
     @abstractmethod
     async def ExtractInstancesFromChunk(
         self, chunk: str, messages: list[ChatMessageModel], retryLimit: int
-    ) -> ChunkInstanceModel:
+    ) -> ExtractChunkInstanceResponseModel:
         pass
 
     @abstractmethod
@@ -24,11 +24,11 @@ class ExtractInstancesFromChunkServiceImpl(ABC):
     @abstractmethod
     async def ExtractQuestionsFromChunk(
         self, messages: list[ChatMessageModel], retryLimit: int
-    ) -> ExtractQuestionsFromChunkResponseModel:
+    ) -> ExtractQaFromChunkResponseModel:
         pass
 
     @abstractmethod
-    async def CleanYoutubeChunks(
+    async def CleanYoutubeChunk(
         self, messages: list[ChatMessageModel], retryLimit: int
     ) -> str:
         pass
@@ -52,17 +52,17 @@ class ExtractChunksFromDocServiceImpl(ABC):
 class BuildRagServiceImpl(ABC):
 
     @abstractmethod
-    async def BuildQaRagFromPdf(self, file: str):
+    async def ExtractQaRagInstancesFromYtVideo(self, videoId: str):
         pass
 
     @abstractmethod
-    async def BuildQaRagFromCsv(self, file: str):
+    async def ExtractQaRagInstancesFromPdf(self, file: str):
         pass
 
     @abstractmethod
-    async def BuildQaRagFromYtVideo(self, videoId: str):
+    async def ExtractQaRagInstancesFromCsv(self, file: str):
         pass
 
     @abstractmethod
-    async def BuildGraphRagFromPdf(self, file: str):
+    async def ExtractLightRagFromPdf(self, file: str):
         pass
