@@ -1,7 +1,6 @@
 from typing import Any, cast
 import json
 from uuid import uuid4, UUID
-from database import psqlDbClient
 from rank_bm25 import BM25Okapi
 from langchain_core.documents import Document
 from fastapi.responses import JSONResponse
@@ -11,7 +10,6 @@ from clientservices.services import Chat, Embedding
 from clientservices.models import (
     ChatRequestModel,
     ChatMessageModel,
-    EmbeddingRequestModel,
 )
 from clientservices.enums import CerebrasChatModelEnum, ChatMessageRoleEnum
 from ragservices.implementations import (
@@ -33,7 +31,6 @@ from ragservices.models import (
     AllClaimsModel,
     AllEntitiesModel,
     ExtractChunkInstanceResponseModel,
-    LightRagResponseModel,
 )
 from ragservices.services.RagUtils import ChunkUtils, DocUtils, YoutubeUtils
 from ragservices.enums import RagServiceResponseEnum
@@ -44,15 +41,12 @@ from ragservices.utils import (
 )
 
 
-
-
-
-
 cerebrasChat = Chat()
 chunkUtils = ChunkUtils()
 docUtils = DocUtils()
 youtubeUtils = YoutubeUtils()
 embeddingService = Embedding()
+
 
 class ExtractInstanceFromChunkService(ExtractInstancesFromChunkServiceImpl):
 
@@ -394,7 +388,7 @@ class BuildRagService(BuildRagServiceImpl):
         self.extractInstanceFromChunkService = ExtractInstanceFromChunkService()
         self.embedding = embeddingService
 
-    async def ExtractQaRagInstancesFromYtVideo(self, videoId: str):
+    async def ExtractQaRagInstancesFromYtVideo(self, videoId: str) -> JSONResponse:
 
         chunks = self.extractChunksFromDocService.ExtractChunksFromYtVideo(
             chunkSec=400, videoId=videoId
@@ -428,46 +422,32 @@ class BuildRagService(BuildRagServiceImpl):
                 ),
             ]
 
-            chunkGraphRagInfo = (
+            chunkRagInfo = (
                 await self.extractInstanceFromChunkService.ExtractQuestionsFromChunk(
                     messages=messages, retryLimit=0
                 )
             )
-            print(chunkGraphRagInfo)
 
             chunkId = uuid4()
 
-            thisChunkText = QaRagAllChunksModel(
-                id=chunkId, text=chunkGraphRagInfo.chunk
+            chunkTexts.append(QaRagAllChunksModel(id=chunkId, text=chunkRagInfo.chunk))
+            chunkQuestions.extend(
+                [
+                    QaRagAllQuestionsModel(id=uuid4(), chunkId=chunkId, text=question)
+                    for question in chunkRagInfo.questions
+                ]
             )
-
-            thisChunkQuestions = [
-                QaRagAllQuestionsModel(id=uuid4(), chunkId=chunkId, text=question)
-                for question in chunkGraphRagInfo.questions
-            ]
-
-            texts: list[str] = [chunkGraphRagInfo.chunk]
-            texts.extend(chunkGraphRagInfo.questions)
-
-            textVectors = await self.embedding.Embed(
-                request=EmbeddingRequestModel(
-                    model="baai/bge-m3",
-                    texts=texts,
-                    type="passage",
-                )
+        return JSONResponse(
+            content=jsonable_encoder(
+                {
+                    "data": "SUCCESS",
+                    "chunks": chunkTexts,
+                    "questions": chunkQuestions,
+                }
             )
+        )
 
-            if textVectors.data is not None:
-                thisChunkText.embedding = textVectors.data[0].embedding
-
-                qLen = len(chunkGraphRagInfo.questions)
-                for i, item in enumerate(textVectors.data[1 : 1 + qLen]):
-                    thisChunkQuestions[i].embedding = item.embedding
-
-            chunkTexts.append(thisChunkText)
-            chunkQuestions.extend(thisChunkQuestions)
-
-    async def ExtractQaRagInstancesFromPdf(self, file: str):
+    async def ExtractQaRagInstancesFromPdf(self, file: str) -> JSONResponse:
         chunks = await self.extractChunksFromDocService.ExtractChunksFromPdf(file=file)
         chunkTexts: list[QaRagAllChunksModel] = []
         chunkQuestions: list[QaRagAllQuestionsModel] = []
@@ -481,96 +461,58 @@ class BuildRagService(BuildRagServiceImpl):
                 ChatMessageModel(role=ChatMessageRoleEnum.USER, content=chunk),
             ]
 
-            chunkGraphRagInfo = (
+            chunkQaInfo = (
                 await self.extractInstanceFromChunkService.ExtractQuestionsFromChunk(
                     messages=messages, retryLimit=0
                 )
             )
+
             chunkId = uuid4()
-            thisChunkText = QaRagAllChunksModel(
-                id=chunkId, text=chunkGraphRagInfo.chunk
-            )
-            thisChunkQuestions = [
-                QaRagAllQuestionsModel(id=uuid4(), chunkId=chunkId, text=rel)
-                for rel in chunkGraphRagInfo.questions
-            ]
-
-            texts: list[str] = []
-            texts.append(chunkGraphRagInfo.chunk)
-            for _, claim in enumerate(chunkGraphRagInfo.questions):
-                texts.append(claim)
-
-            textVectors = await self.embedding.Embed(
-                request=EmbeddingRequestModel(
-                    model="baai/bge-m3",
-                    texts=texts,
-                    type="passage",
-                )
-            )
-            c = 1
-            cLen = len(chunkGraphRagInfo.questions)
-            if textVectors.data is not None:
-                thisChunkText.embedding = textVectors.data[0].embedding
-                for cIndex, item in enumerate(textVectors.data[c : c + cLen]):
-                    thisChunkQuestions[cIndex].embedding = item.embedding
-
-            chunkTexts.append(thisChunkText)
-            chunkQuestions.extend(thisChunkQuestions)
-
-        finalChuks = [(str(chunk.id), chunk.text) for chunk in chunkTexts]
-
-        async with psqlDbClient.pool.acquire() as conn:
-            await conn.executemany(
-                "INSERT INTO chunks (id, text) VALUES ($1, $2)",
-                finalChuks,
-            )
-
-            await conn.executemany(
-                "INSERT INTO claims (id,  chunk_id, node_id,embedding) VALUES ($1, $2, $3, $4)",
+            chunkTexts.append(QaRagAllChunksModel(id=chunkId, text=chunkQaInfo.chunk))
+            chunkQuestions.extend(
                 [
-                    (
-                        str(claim.id),
-                        str(claim.chunkId),
-                        None,
-                        claim.embedding,
-                    )
-                    for claim in chunkQuestions
-                ],
+                    QaRagAllQuestionsModel(id=uuid4(), chunkId=chunkId, text=q)
+                    for q in chunkQaInfo.questions
+                ]
             )
+        return JSONResponse(
+            content=jsonable_encoder(
+                {
+                    "data": "SUCCESS",
+                    "chunks": chunkTexts,
+                    "questions": chunkQuestions,
+                }
+            )
+        )
 
-    async def ExtractQaRagInstancesFromCsv(self, file: str):
+    async def ExtractQaRagInstancesFromCsv(self, file: str) -> JSONResponse:
         qa = self.extractChunksFromDocService.ExtractQaChunkFromCsv(file=file)
 
-        chunks: list[QaRagAllChunksModel] = []
+        answers: list[QaRagAllChunksModel] = []
         questions: list[QaRagAllQuestionsModel] = []
-        qaBatchSize = 10
 
-        for index in range(0, len(qa.questions), qaBatchSize):
-            queVecRes = await self.embedding.Embed(
-                request=EmbeddingRequestModel(
-                    model="baai/bge-m3",
-                    texts=qa.questions[index : index + qaBatchSize],
-                    type="passage",
+        for index, _ in enumerate(qa.answers):
+            tempChunkId = uuid4()
+            answers.append(QaRagAllChunksModel(id=tempChunkId, text=qa.answers[index]))
+            questions.append(
+                QaRagAllQuestionsModel(
+                    id=uuid4(),
+                    chunkId=tempChunkId,
+                    text=qa.questions[index],
                 )
             )
 
-            if queVecRes.data is not None:
-                for idx, q in enumerate(queVecRes.data):
-                    chunkId = uuid4()
+        return JSONResponse(
+            content=jsonable_encoder(
+                {
+                    "data": "SUCCESS",
+                    "answers": answers,
+                    "questions": questions,
+                }
+            )
+        )
 
-                    chunks.append(
-                        QaRagAllChunksModel(id=chunkId, text=qa.answers[index + idx])
-                    )
-                    questions.append(
-                        QaRagAllQuestionsModel(
-                            id=uuid4(),
-                            chunkId=chunkId,
-                            embedding=q.embedding,
-                            text=qa.questions[index + idx],
-                        )
-                    )
-
-    async def ExtractLightRagFromPdf(self, file: str):
+    async def ExtractLightRagFromPdf(self, file: str) -> JSONResponse:
         orginalChunks = await self.extractChunksFromDocService.ExtractChunksFromPdf(
             file
         )
@@ -723,6 +665,7 @@ class BuildRagService(BuildRagServiceImpl):
         return JSONResponse(
             content=jsonable_encoder(
                 {
+                    "data": "SUCCESS",
                     "chunks": allChunks,
                     "entities": allEntities,
                     "relations": allRelations,
@@ -751,3 +694,22 @@ class BuildRagService(BuildRagServiceImpl):
 #         ),
 #     ],
 # )
+
+
+# async with psqlDbClient.pool.acquire() as conn:
+#             await conn.executemany(
+#                 "INSERT INTO chunks (id, text) VALUES ($1, $2)",
+#                 finalChuks,
+#             )
+
+#             await conn.executemany(
+#                 "INSERT INTO claims (id,  chunk_id, node_id,embedding) VALUES ($1, $2, $3, $4)",
+#                 [
+#                     (
+#                         str(claim.id),
+#                         str(claim.chunkId),
+#                         None,
+#                     )
+#                     for claim in chunkQuestions
+#                 ],
+#             )

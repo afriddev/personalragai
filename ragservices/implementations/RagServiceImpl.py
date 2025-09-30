@@ -5,6 +5,7 @@ from ragservices.models import (
     ExtractQaFromChunkResponseModel,
 )
 from clientservices.models import ChatMessageModel
+from fastapi.responses import JSONResponse
 
 
 class ExtractInstancesFromChunkServiceImpl(ABC):
@@ -52,17 +53,17 @@ class ExtractChunksFromDocServiceImpl(ABC):
 class BuildRagServiceImpl(ABC):
 
     @abstractmethod
-    async def ExtractQaRagInstancesFromYtVideo(self, videoId: str):
+    async def ExtractQaRagInstancesFromYtVideo(self, videoId: str) -> JSONResponse:
         pass
 
     @abstractmethod
-    async def ExtractQaRagInstancesFromPdf(self, file: str):
+    async def ExtractQaRagInstancesFromPdf(self, file: str) -> JSONResponse:
         pass
 
     @abstractmethod
-    async def ExtractQaRagInstancesFromCsv(self, file: str):
+    async def ExtractQaRagInstancesFromCsv(self, file: str) -> JSONResponse:
         pass
 
     @abstractmethod
-    async def ExtractLightRagFromPdf(self, file: str):
+    async def ExtractLightRagFromPdf(self, file: str) -> JSONResponse:
         pass

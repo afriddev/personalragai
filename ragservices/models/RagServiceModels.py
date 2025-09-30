@@ -46,7 +46,6 @@ class QaRagAllQuestionsModel(BaseModel):
     id: UUID
     chunkId: UUID
     text: str
-    embedding: list[float] | None = None
 
 
 class ExtractQaFromChunkResponseModel(BaseModel):
