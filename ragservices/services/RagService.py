@@ -596,9 +596,6 @@ class BuildRagService(BuildRagServiceImpl):
                     ]
                 )
 
-            if index == 5:
-                break
-
             print(f"{index + 1} of {len(orginalChunks)}")
 
         # Indexing Entities using BM25
